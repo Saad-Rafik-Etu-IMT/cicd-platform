@@ -268,3 +268,61 @@
     overflow-x: auto;
   }
 }
+
+/* Icon utilities */
+.icon-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: var(--space-xs);
+}
+
+.icon-inline svg {
+  width: 16px;
+  height: 16px;
+}
+
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-cell svg {
+  width: 14px;
+  height: 14px;
+}
+
+.status-cell.status-success svg {
+  color: var(--success);
+}
+
+.status-cell.status-failed svg {
+  color: var(--error);
+}
+
+.status-cell.status-running svg {
+  color: var(--info);
+  animation: spin 1s linear infinite;
+}
+
+.status-cell.status-pending svg {
+  color: var(--text-muted);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.error-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--warning);
+  margin-right: var(--space-xs);
+}
+
+.error-icon svg {
+  width: 16px;
+  height: 16px;
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
+import { Icons } from './Icons'
 import './Toast.css'
 
 const ToastContext = createContext()
@@ -59,18 +60,22 @@ function Toast({ id, message, type, onClose }) {
     setTimeout(onClose, 300)
   }
 
-  const icons = {
-    success: '✓',
-    error: '✕',
-    warning: '⚠',
-    info: 'ℹ'
+  const getIcon = () => {
+    switch (type) {
+      case 'success': return Icons.success
+      case 'error': return Icons.error
+      case 'warning': return Icons.warning
+      default: return Icons.info
+    }
   }
 
   return (
     <div className={`toast toast-${type} ${isExiting ? 'toast-exit' : ''}`}>
-      <span className="toast-icon">{icons[type]}</span>
+      <span className="toast-icon">{getIcon()}</span>
       <span className="toast-message">{message}</span>
-      <button className="toast-close" onClick={handleClose}>×</button>
+      <button className="toast-close" onClick={handleClose}>
+        {Icons.close}
+      </button>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { Icons } from '../components/Icons'
 import './Login.css'
 
 export default function Login() {
@@ -48,7 +49,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-container">
         <div className="login-header">
-          <span className="login-logo">🚀</span>
+          <span className="login-logo">{Icons.rocket}</span>
           <h1>CI/CD Platform</h1>
           <p className="login-subtitle">Plateforme de déploiement continu</p>
         </div>
@@ -69,7 +70,7 @@ export default function Login() {
 
         {error && (
           <div className="login-error">
-            <span>⚠️</span>
+            <span className="error-icon">{Icons.warning}</span>
             <span>
               {error === 'no_code' && 'Code d\'autorisation manquant'}
               {error === 'oauth_failed' && 'Échec de l\'authentification OAuth'}
@@ -96,15 +97,15 @@ export default function Login() {
           <p>En vous connectant, vous acceptez les conditions d'utilisation.</p>
           <div className="login-features">
             <div className="feature">
-              <span>🔒</span>
+              <span className="feature-icon">{Icons.lock}</span>
               <span>Authentification sécurisée</span>
             </div>
             <div className="feature">
-              <span>👥</span>
+              <span className="feature-icon">{Icons.users}</span>
               <span>Gestion des rôles</span>
             </div>
             <div className="feature">
-              <span>🚀</span>
+              <span className="feature-icon">{Icons.rocket}</span>
               <span>Déploiement automatique</span>
             </div>
           </div>

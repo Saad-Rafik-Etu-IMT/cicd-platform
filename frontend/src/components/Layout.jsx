@@ -1,5 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { Icons } from './Icons'
 import './Layout.css'
 
 export default function Layout() {
@@ -16,13 +17,13 @@ export default function Layout() {
       <header className="header">
         <div className="header-content">
           <Link to="/" className="logo">
-            <span className="logo-icon">🚀</span>
+            <span className="logo-icon">{Icons.deploy}</span>
             <span className="logo-text">CI/CD Platform</span>
           </Link>
           <nav className="nav">
             <Link to="/">Dashboard</Link>
             {hasPermission('manage_env') && (
-              <Link to="/env">🔐 Variables</Link>
+              <Link to="/env" className="nav-link-icon"><span className="nav-icon">{Icons.key}</span>Variables</Link>
             )}
             {hasPermission('manage_users') && (
               <Link to="/users">👥 Utilisateurs</Link>

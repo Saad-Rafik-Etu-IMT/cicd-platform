@@ -24,10 +24,17 @@
 }
 
 .login-logo {
-  font-size: 64px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 16px;
   animation: float 3s ease-in-out infinite;
+  color: #3b82f6;
+}
+
+.login-logo svg {
+  width: 64px;
+  height: 64px;
 }
 
 @keyframes float {
@@ -190,4 +197,28 @@
     flex-direction: column;
     gap: 10px;
   }
+}
+
+/* Icon styles */
+.feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+}
+
+.feature-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.error-icon {
+  display: flex;
+  align-items: center;
+  color: #ef4444;
+}
+
+.error-icon svg {
+  width: 18px;
+  height: 18px;
 }

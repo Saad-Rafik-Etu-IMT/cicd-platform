@@ -50,10 +50,10 @@ export default function Dashboard() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'success': return '✅'
-      case 'failed': return '❌'
-      case 'running': return '⏳'
-      default: return '⏸️'
+      case 'success': return Icons.success
+      case 'failed': return Icons.error
+      case 'running': return Icons.running
+      default: return Icons.pending
     }
   }
 
@@ -101,7 +101,7 @@ export default function Dashboard() {
             onClick={triggerPipeline}
             disabled={triggering}
           >
-            {triggering ? '⏳ Déclenchement...' : '🚀 Nouveau déploiement'}
+            {triggering ? <><span className="icon-inline">{Icons.running}</span>Déclenchement...</> : <><span className="icon-inline">{Icons.deploy}</span>Nouveau déploiement</>}
           </button>
         )}
       </div>
@@ -136,7 +136,8 @@ export default function Dashboard() {
       {/* Error message */}
       {error && (
         <div className="error-banner">
-          <span>⚠️ {error}</span>
+          <span className="error-icon">{Icons.warning}</span>
+          <span>{error}</span>
         </div>
       )}
 
@@ -177,7 +178,8 @@ export default function Dashboard() {
                   </td>
                   <td>
                     <span className={`status status-${pipeline.status}`}>
-                      {getStatusIcon(pipeline.status)} {pipeline.status}
+                      <span className={`status-cell status-${pipeline.status}`}>{getStatusIcon(pipeline.status)}</span>
+                      {pipeline.status}
                     </span>
                   </td>
                   <td>

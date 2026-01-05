@@ -22,7 +22,7 @@ function AppContent() {
     })
 
     socket.on('pipeline:completed', (data) => {
-      addToast(`Pipeline #${data.id} terminé avec succès ✓`, 'success', 5000)
+      addToast(`Pipeline #${data.id} terminé avec succès`, 'success', 5000)
     })
 
     socket.on('pipeline:failed', (data) => {
