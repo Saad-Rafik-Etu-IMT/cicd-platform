@@ -57,6 +57,17 @@ CREATE INDEX IF NOT EXISTS idx_pipelines_created_at ON pipelines(created_at DESC
 CREATE INDEX IF NOT EXISTS idx_pipeline_logs_pipeline_id ON pipeline_logs(pipeline_id);
 CREATE INDEX IF NOT EXISTS idx_deployments_status ON deployments(status);
 
+-- Environment variables table (secrets)
+CREATE TABLE IF NOT EXISTS env_variables (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    value TEXT NOT NULL,
+    is_secret BOOLEAN DEFAULT true,
+    description VARCHAR(500),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Insert default admin user (password: admin123)
 INSERT INTO users (username, email, password_hash, role)
 VALUES ('admin', 'admin@bfb.local', '$2b$10$rQZ5QHQK8Uu5QHQK8Uu5QO', 'admin')

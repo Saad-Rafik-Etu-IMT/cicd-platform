@@ -12,6 +12,7 @@ export default function Layout() {
           </Link>
           <nav className="nav">
             <Link to="/">Dashboard</Link>
+            <Link to="/env">🔐 Variables</Link>
           </nav>
           <div className="header-status">
             <span className="status-dot"></span>

@@ -1,0 +1,6 @@
+{
+  "name": "DATABASE_URL",
+  "value": "postgres://user:pass@localhost/db",
+  "is_secret": true,
+  "description": "Database connection URL"
+}
