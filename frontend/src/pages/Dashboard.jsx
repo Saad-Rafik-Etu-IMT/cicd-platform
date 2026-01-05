@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import { StatusChart, TrendChart, DurationChart } from '../components/Charts'
 import './Dashboard.css'
 
 export default function Dashboard() {
@@ -116,6 +117,13 @@ export default function Dashboard() {
           <span className="stat-value">{stats.running}</span>
           <span className="stat-label">En cours</span>
         </div>
+      </div>
+
+      {/* Charts */}
+      <div className="charts-section">
+        <StatusChart pipelines={pipelines} />
+        <TrendChart pipelines={pipelines} />
+        <DurationChart pipelines={pipelines} />
       </div>
 
       {/* Error message */}
