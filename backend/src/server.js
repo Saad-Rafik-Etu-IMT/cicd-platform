@@ -25,9 +25,11 @@ app.set('io', io)
 // Routes
 const pipelinesRouter = require('./routes/pipelines')
 const webhooksRouter = require('./routes/webhooks')
+const vmRouter = require('./routes/vm')
 
 app.use('/api/pipelines', pipelinesRouter)
 app.use('/api/webhooks', webhooksRouter)
+app.use('/api/vm', vmRouter)
 
 // Health check
 app.get('/health', (req, res) => {
