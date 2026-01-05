@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { io } from 'socket.io-client'
+import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import './PipelineDetail.css'
 
@@ -16,6 +17,7 @@ const PIPELINE_STEPS = [
 
 export default function PipelineDetail() {
   const { id } = useParams()
+  const { hasPermission } = useAuth()
   const [pipeline, setPipeline] = useState(null)
   const [logs, setLogs] = useState([])
   const [steps, setSteps] = useState([])
@@ -23,6 +25,8 @@ export default function PipelineDetail() {
   const [connected, setConnected] = useState(false)
   const logsEndRef = useRef(null)
   const socketRef = useRef(null)
+
+  const canRollback = hasPermission('rollback')
 
   useEffect(() => {
     fetchPipeline()
@@ -184,7 +188,7 @@ export default function PipelineDetail() {
           <span className={`connection-status ${connected ? 'connected' : ''}`}>
             {connected ? '🟢 Temps réel' : '🔴 Déconnecté'}
           </span>
-          {pipeline.status === 'success' && (
+          {pipeline.status === 'success' && canRollback && (
             <button className="btn-danger" onClick={triggerRollback}>
               ⏮️ Rollback
             </button>

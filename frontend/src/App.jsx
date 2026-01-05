@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
 import PipelineDetail from './pages/PipelineDetail'
 import EnvVariables from './pages/EnvVariables'
+import Users from './pages/Users'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import Layout from './components/Layout'
@@ -60,6 +61,11 @@ function AppContent() {
             <Route path="/env" element={
               <ProtectedRoute requiredPermission="manage_env">
                 <EnvVariables />
+              </ProtectedRoute>
+            } />
+            <Route path="/users" element={
+              <ProtectedRoute requiredPermission="manage_users">
+                <Users />
               </ProtectedRoute>
             } />
           </Route>

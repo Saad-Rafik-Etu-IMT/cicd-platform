@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import './Login.css'
 
@@ -8,14 +8,27 @@ export default function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const error = searchParams.get('error')
+  const loggedOut = searchParams.get('logged_out') === 'true'
+  const [showLogoutMessage, setShowLogoutMessage] = useState(loggedOut)
 
   useEffect(() => {
-    if (isAuthenticated && !loading) {
+    // Don't auto-redirect if user just logged out
+    if (isAuthenticated && !loading && !loggedOut) {
       navigate('/')
     }
-  }, [isAuthenticated, loading, navigate])
+  }, [isAuthenticated, loading, navigate, loggedOut])
+
+  useEffect(() => {
+    // Clear the logout message after 5 seconds
+    if (showLogoutMessage) {
+      const timer = setTimeout(() => setShowLogoutMessage(false), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [showLogoutMessage])
 
   const handleGitHubLogin = () => {
+    // Clear logout state before redirecting to GitHub
+    setShowLogoutMessage(false)
     const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
     window.location.href = `${backendUrl}/api/auth/github`
   }
@@ -39,6 +52,20 @@ export default function Login() {
           <h1>CI/CD Platform</h1>
           <p className="login-subtitle">Plateforme de déploiement continu</p>
         </div>
+
+        {showLogoutMessage && (
+          <div className="login-success">
+            <span>✅</span>
+            <span>Déconnexion réussie</span>
+          </div>
+        )}
+
+        {showLogoutMessage && (
+          <div className="login-info-box">
+            <span>💡</span>
+            <span>Pour changer de compte GitHub, déconnectez-vous d'abord de GitHub ou révoquez l'accès dans vos paramètres GitHub.</span>
+          </div>
+        )}
 
         {error && (
           <div className="login-error">

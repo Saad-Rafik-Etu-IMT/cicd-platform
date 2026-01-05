@@ -8,7 +8,7 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    navigate('/login?logged_out=true')
   }
 
   return (
@@ -23,6 +23,9 @@ export default function Layout() {
             <Link to="/">Dashboard</Link>
             {hasPermission('manage_env') && (
               <Link to="/env">🔐 Variables</Link>
+            )}
+            {hasPermission('manage_users') && (
+              <Link to="/users">👥 Utilisateurs</Link>
             )}
           </nav>
           <div className="user-section">

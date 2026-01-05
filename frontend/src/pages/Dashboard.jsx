@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { StatusChart, TrendChart, DurationChart } from '../components/Charts'
 import './Dashboard.css'
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { hasPermission } = useAuth()
   const [pipelines, setPipelines] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [triggering, setTriggering] = useState(false)
+
+  const canTrigger = hasPermission('trigger')
 
   useEffect(() => {
     fetchPipelines()
@@ -91,13 +95,15 @@ export default function Dashboard() {
           <h1>Dashboard</h1>
           <p className="subtitle">Gestion des pipelines CI/CD</p>
         </div>
-        <button 
-          className="btn-primary trigger-btn"
-          onClick={triggerPipeline}
-          disabled={triggering}
-        >
-          {triggering ? '⏳ Déclenchement...' : '🚀 Nouveau déploiement'}
-        </button>
+        {canTrigger && (
+          <button 
+            className="btn-primary trigger-btn"
+            onClick={triggerPipeline}
+            disabled={triggering}
+          >
+            {triggering ? '⏳ Déclenchement...' : '🚀 Nouveau déploiement'}
+          </button>
+        )}
       </div>
 
       {/* Statistics */}

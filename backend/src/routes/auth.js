@@ -16,7 +16,11 @@ router.get('/github', (req, res) => {
   const redirectUri = `${process.env.BACKEND_URL || 'http://localhost:3001'}/api/auth/github/callback`
   const scope = 'user:email read:user'
   
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`
+  // Add random state to prevent caching issues
+  const state = Math.random().toString(36).substring(7)
+  
+  // Use login parameter to force GitHub to prompt for re-authorization
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&allow_signup=true`
   
   res.redirect(githubAuthUrl)
 })

@@ -1,6 +1,11 @@
 const express = require('express')
 const router = express.Router()
 const pool = require('../config/database')
+const { authenticateToken, requireRole } = require('../middleware/auth')
+
+// All routes require authentication and admin role
+router.use(authenticateToken)
+router.use(requireRole('admin'))
 
 // GET all environment variables
 router.get('/', async (req, res) => {

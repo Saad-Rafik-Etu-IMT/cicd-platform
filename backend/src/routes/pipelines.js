@@ -2,8 +2,12 @@ const express = require('express')
 const router = express.Router()
 const pool = require('../config/database')
 const { executePipeline, rollbackPipeline } = require('../services/pipelineExecutor')
+const { authenticateToken, requireRole } = require('../middleware/auth')
 
-// GET all pipelines
+// All routes require authentication
+router.use(authenticateToken)
+
+// GET all pipelines - all authenticated users can view
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -16,7 +20,7 @@ router.get('/', async (req, res) => {
   }
 })
 
-// GET single pipeline with logs
+// GET single pipeline with logs - all authenticated users can view
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params
@@ -45,8 +49,8 @@ router.get('/:id', async (req, res) => {
   }
 })
 
-// POST trigger new pipeline
-router.post('/trigger', async (req, res) => {
+// POST trigger new pipeline - requires admin or developer role
+router.post('/trigger', requireRole('admin', 'developer'), async (req, res) => {
   try {
     const { repo_url, branch = 'master', commit_hash } = req.body
     
@@ -54,12 +58,12 @@ router.post('/trigger', async (req, res) => {
       return res.status(400).json({ error: 'repo_url is required' })
     }
     
-    // Create pipeline record
+    // Create pipeline record with user info
     const result = await pool.query(
-      `INSERT INTO pipelines (repo_url, branch, commit_hash, status, trigger_type)
-       VALUES ($1, $2, $3, 'pending', 'manual')
+      `INSERT INTO pipelines (repo_url, branch, commit_hash, status, trigger_type, user_id)
+       VALUES ($1, $2, $3, 'pending', 'manual', $4)
        RETURNING *`,
-      [repo_url, branch, commit_hash || null]
+      [repo_url, branch, commit_hash || null, req.user.id]
     )
     
     const pipeline = result.rows[0]
@@ -70,14 +74,14 @@ router.post('/trigger', async (req, res) => {
       console.error('Pipeline execution failed:', err)
     })
     
-    res.status(201).json({ pipeline })
+    res.status(201).json({ pipeline, triggeredBy: req.user.username })
   } catch (err) {
     console.error('Error triggering pipeline:', err)
     res.status(500).json({ error: 'Failed to trigger pipeline' })
   }
 })
 
-// GET pipeline logs only
+// GET pipeline logs only - all authenticated users can view
 router.get('/:id/logs', async (req, res) => {
   try {
     const { id } = req.params
@@ -94,8 +98,8 @@ router.get('/:id/logs', async (req, res) => {
   }
 })
 
-// POST rollback
-router.post('/:id/rollback', async (req, res) => {
+// POST rollback - requires admin or developer role
+router.post('/:id/rollback', requireRole('admin', 'developer'), async (req, res) => {
   try {
     const { id } = req.params
     const io = req.app.get('io')
