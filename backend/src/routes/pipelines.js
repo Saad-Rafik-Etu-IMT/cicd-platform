@@ -77,6 +77,23 @@ router.post('/trigger', async (req, res) => {
   }
 })
 
+// GET pipeline logs only
+router.get('/:id/logs', async (req, res) => {
+  try {
+    const { id } = req.params
+    
+    const logsResult = await pool.query(
+      'SELECT * FROM pipeline_logs WHERE pipeline_id = $1 ORDER BY step_order ASC',
+      [id]
+    )
+    
+    res.json({ logs: logsResult.rows })
+  } catch (err) {
+    console.error('Error fetching pipeline logs:', err)
+    res.status(500).json({ error: 'Failed to fetch logs' })
+  }
+})
+
 // POST rollback
 router.post('/:id/rollback', async (req, res) => {
   try {

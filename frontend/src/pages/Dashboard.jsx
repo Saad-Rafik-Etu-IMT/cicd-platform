@@ -31,7 +31,10 @@ export default function Dashboard() {
   const triggerPipeline = async () => {
     setTriggering(true)
     try {
-      await api.post('/pipelines', { branch: 'master' })
+      await api.post('/pipelines/trigger', { 
+        repo_url: 'https://github.com/Saad-Rafik-Etu-IMT/demo.git',
+        branch: 'master' 
+      })
       await fetchPipelines()
     } catch (err) {
       alert('Erreur lors du déclenchement du pipeline')
