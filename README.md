@@ -1,49 +1,99 @@
-# 🚀 CI/CD Platform - BFB Management
+# 🚀 Plateforme CI/CD - BFB Management
 
-Plateforme de déploiement continu pour l'application BFB Management.
+Bienvenue dans la plateforme CI/CD pour le projet Cloud Sécurisé. Cette application permet de construire, tester et déployer automatiquement l'application BFB Management.
 
-## 📋 État du projet
+## 📋 Fonctionnalités
 
-### ✅ CRITIQUE (Terminé)
-- [x] Endpoint logs pipeline - GET `/api/pipelines/:id/logs`
-- [x] Bouton "Nouveau Pipeline" fonctionnel
-- [x] Connexion au vrai repo BFB
+- **Pipelines Automatisés** : Clone, Test, Build, SonarQube, Docker Build, Deploy.
+- **Visualisation en Temps Réel** : Suivi des étapes du pipeline via WebSocket.
+- **Gestion des VMs** : Déploiement automatique sur VM via SSH.
+- **Rollback** : Retour à la version précédente en un clic.
+- **Webhooks** : Déclenchement automatique via GitHub Webhooks.
 
-### ⏸️ IMPORTANT (À faire après - Améliore la qualité)
-- [ ] Page détail pipeline avec logs temps réel WebSocket
-- [ ] Authentification basique (login/password)
-- [ ] Rollback fonctionnel
-- [ ] Notifications en cas d'échec
+## 🛠️ Prérequis
 
-### 🔄 SECONDAIRE (En cours - Nice to have)
-- [ ] Graphiques statistiques (Chart.js)
-- [ ] Multi-projets
-- [ ] Variables d'environnement (UI secrets)
-- [ ] Tests automatisés
+- Docker & Docker Compose
+- Node.js 18+ (pour le développement local)
 
-### 📝 DOCUMENTATION
-- [ ] README complet
-- [ ] Schéma d'architecture
-- [ ] Guide déploiement VM
+## 🚀 Démarrage Rapide (Mode Simulation)
 
----
+Le mode simulation permet de tester toute l'interface et le flux sans avoir besoin d'une vraie VM ou d'un repo Git.
 
-## 🛠️ Installation
+1. **Cloner le projet**
 
-```bash
-# Cloner le repo
-git clone https://github.com/Saad-Rafik-Etu-IMT/cicd-platform.git
-cd cicd-platform
+   ```bash
+   git clone https://github.com/Saad-Rafik-Etu-IMT/cicd-platform
+   cd cicd-platform
+   ```
+2. **Configurer l'environnement**
+   Le fichier `backend/.env` est déjà configuré pour le mode simulation (`PIPELINE_MODE=simulate`).
+3. **Lancer les conteneurs**
 
-# Lancer avec Docker
-docker-compose up -d
+   ```bash
+   docker-compose up -d --build
+   ```
+4. **Accéder à l'application**
+
+   - **Frontend (Dashboard)** : [http://localhost:3000](http://localhost:3000)
+   - **Backend API** : [http://localhost:3001](http://localhost:3001)
+   - **Base de données** : Port 5433
+   - **Redis** : Port 6379
+5. **Tester un pipeline**
+
+   - Allez sur le Dashboard.
+   - Cliquez sur "Nouveau Pipeline".
+   - Observez les étapes se dérouler en temps réel (simulées).
+
+## 🌍 Déploiement Réel (Production)
+
+Pour connecter la plateforme à une vraie VM et déployer réellement l'application :
+
+### 1. Préparer la VM Cible
+
+Utilisez le script fourni pour configurer une VM Ubuntu vierge :
+
+1. Copiez le dossier `vm-setup` sur votre VM.
+2. Exécutez le script d'installation :
+
+   ```bash
+   cd vm-setup
+   chmod +x setup-vm.sh
+   ./setup-vm.sh
+   ```
+
+   Cela installera Docker, créera l'utilisateur `deploy` et configurera les clés SSH.
+
+### 2. Configurer le Backend
+
+Modifiez le fichier `backend/.env` :
+
+```env
+PIPELINE_MODE=real
+VM_HOST=<IP_DE_VOTRE_VM>
+VM_USER=deploy
+VM_SSH_PRIVATE_KEY=<CONTENU_DE_LA_CLE_PRIVEE>
+# Ou utilisez un chemin vers la clé dans docker-compose.yml
 ```
 
-## 🌐 Accès
+### 3. Configurer SonarQube (Optionnel)
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3001
-- **PostgreSQL**: localhost:5433
-- **Redis**: localhost:6379
+Pour activer l'analyse de code réelle :
 
-## 📅 Deadline: 9 janvier 2026
+```env
+SONAR_HOST_URL=http://<IP_SONAR>:9000
+SONAR_TOKEN=<VOTRE_TOKEN>
+```
+
+## 🏗️ Architecture
+
+- **Frontend** : React + Vite (Port 3000)
+- **Backend** : Node.js + Express + Socket.io (Port 3001)
+- **Base de données** : PostgreSQL (Port 5433)
+- **File d'attente** : Redis (Port 6379)
+- **Worker** : Gère l'exécution des pipelines (intégré au backend)
+
+## 🔒 Sécurité
+
+- **Isolation** : Chaque pipeline s'exécute dans un dossier temporaire isolé.
+- **SSH** : Connexion sécurisée par clé privée uniquement.
+- **Secrets** : Les variables sensibles sont gérées via `.env`.

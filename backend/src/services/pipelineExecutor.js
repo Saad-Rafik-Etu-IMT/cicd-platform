@@ -219,4 +219,28 @@ async function runStep(stepName, pipeline) {
   return simulateStep(stepName, pipeline)
 }
 
-module.exports = { executePipeline }
+async function rollbackPipeline(pipelineId, targetImage, io) {
+  const room = `pipeline-${pipelineId}`
+  io.to(room).emit('rollback_started', { version: targetImage })
+
+  try {
+    if (MODE === 'real') {
+      await sshService.deploy(targetImage)
+      // Verify health after rollback
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      const isHealthy = await sshService.healthCheck()
+      if (!isHealthy) throw new Error('Health check failed after rollback')
+    } else {
+      // Simulate rollback
+      await new Promise(resolve => setTimeout(resolve, 3000))
+    }
+
+    io.to(room).emit('rollback_completed', { version: targetImage })
+    return { success: true, version: targetImage }
+  } catch (error) {
+    io.to(room).emit('rollback_failed', { error: error.message })
+    throw error
+  }
+}
+
+module.exports = { executePipeline, rollbackPipeline }
