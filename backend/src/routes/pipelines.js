@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const pool = require('../config/database')
-const { executePipeline } = require('../services/pipelineExecutor')
+const { executePipeline, rollbackPipeline } = require('../services/pipelineExecutor')
 
 // GET all pipelines
 router.get('/', async (req, res) => {
@@ -114,14 +114,8 @@ router.post('/:id/rollback', async (req, res) => {
     
     const previousVersion = result.rows[0].docker_image
     
-    io.to(`pipeline-${id}`).emit('rollback_started')
-    
-    // In a real scenario, this would SSH to VM and switch containers
-    setTimeout(() => {
-      io.to(`pipeline-${id}`).emit('rollback_completed', { 
-        version: previousVersion 
-      })
-    }, 3000)
+    // Execute rollback
+    await rollbackPipeline(id, previousVersion, io)
     
     res.json({ message: 'Rollback initiated', version: previousVersion })
   } catch (err) {
