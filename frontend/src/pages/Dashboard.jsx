@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { StatusChart, TrendChart, DurationChart } from '../components/Charts'
 import './Dashboard.css'
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [pipelines, setPipelines] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -158,9 +159,15 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {pipelines.map(pipeline => (
-                <tr key={pipeline.id} className={`row-${pipeline.status}`}>
+                <tr 
+                  key={pipeline.id} 
+                  className={`row-${pipeline.status}`}
+                  onClick={() => navigate(`/pipeline/${pipeline.id}`)}
+                >
                   <td>
-                    <Link to={`/pipeline/${pipeline.id}`}>#{pipeline.id}</Link>
+                    <Link to={`/pipeline/${pipeline.id}`} onClick={(e) => e.stopPropagation()}>
+                      #{pipeline.id}
+                    </Link>
                   </td>
                   <td>
                     <span className={`status status-${pipeline.status}`}>
@@ -179,7 +186,11 @@ export default function Dashboard() {
                   <td>{formatDuration(pipeline.started_at, pipeline.completed_at)}</td>
                   <td>{formatDate(pipeline.created_at)}</td>
                   <td>
-                    <Link to={`/pipeline/${pipeline.id}`} className="btn-link">
+                    <Link 
+                      to={`/pipeline/${pipeline.id}`} 
+                      className="btn-link"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       Voir détails →
                     </Link>
                   </td>
