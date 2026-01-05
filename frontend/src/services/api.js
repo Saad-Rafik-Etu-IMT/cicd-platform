@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { io } from 'socket.io-client'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -8,6 +9,14 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   }
+})
+
+// Socket.io client
+export const socket = io(API_BASE, {
+  autoConnect: true,
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionAttempts: 5
 })
 
 // Request interceptor

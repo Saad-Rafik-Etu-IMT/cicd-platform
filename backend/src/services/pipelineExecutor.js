@@ -31,7 +31,9 @@ async function executePipeline(pipeline, io) {
       ['running', pipeline.id]
     )
     
+    // Emit to room and broadcast globally for notifications
     io.to(pipelineRoom).emit('pipeline_started', { id: pipeline.id })
+    io.emit('pipeline:started', { id: pipeline.id })
     
     for (const step of STEPS) {
       await executeStep(pipeline, step, io, pipelineRoom)
@@ -50,7 +52,9 @@ async function executePipeline(pipeline, io) {
       [pipeline.id, `bfb-management:${pipeline.commit_hash || 'latest'}`]
     )
     
+    // Emit to room and broadcast globally for notifications
     io.to(pipelineRoom).emit('pipeline_completed', { id: pipeline.id })
+    io.emit('pipeline:completed', { id: pipeline.id })
     
   } catch (error) {
     // Pipeline failed
@@ -59,10 +63,12 @@ async function executePipeline(pipeline, io) {
       ['failed', pipeline.id]
     )
     
+    // Emit to room and broadcast globally for notifications
     io.to(pipelineRoom).emit('pipeline_failed', { 
       id: pipeline.id, 
       error: error.message 
     })
+    io.emit('pipeline:failed', { id: pipeline.id, error: error.message })
     
     throw error
   }
