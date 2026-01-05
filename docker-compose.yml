@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  # ========================================
+  # PostgreSQL - Base de données CI/CD
+  # ========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: cicd-postgres
+    environment:
+      POSTGRES_DB: cicd_db
+      POSTGRES_USER: cicd_user
+      POSTGRES_PASSWORD: cicd_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    networks:
+      - cicd-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cicd_user -d cicd_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # Redis - Queue pour les jobs pipeline
+  # ========================================
+  redis:
+    image: redis:7-alpine
+    container_name: cicd-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cicd-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # Backend Node.js - API + WebSocket
+  # ========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cicd-backend
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: cicd_db
+      DB_USER: cicd_user
+      DB_PASSWORD: cicd_pass
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # GitHub (à configurer)
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-your_webhook_secret}
+      # VM SSH (à configurer)
+      VM_IP: ${VM_IP:-192.168.1.100}
+      VM_USER: ${VM_USER:-deployer}
+      SSH_KEY_PATH: /app/ssh/vm_deployer
+      # SonarQube (optionnel)
+      SONAR_URL: ${SONAR_URL:-http://localhost:9000}
+      SONAR_TOKEN: ${SONAR_TOKEN:-}
+      # App repo
+      APP_REPO_URL: ${APP_REPO_URL:-https://github.com/Saad-Rafik-Etu-IMT/demo.git}
+    volumes:
+      - ./ssh:/app/ssh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cicd-network
+    restart: unless-stopped
+
+  # ========================================
+  # Frontend React - Dashboard
+  # ========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cicd-frontend
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_URL: http://localhost:3001
+      VITE_WS_URL: ws://localhost:3001
+    depends_on:
+      - backend
+    networks:
+      - cicd-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  cicd-network:
+    driver: bridge
