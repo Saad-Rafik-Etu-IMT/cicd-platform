@@ -2,16 +2,23 @@
 -- CI/CD Platform Database Schema
 -- ========================================
 
--- Users table
+-- Users table (with GitHub OAuth support)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
+    github_id BIGINT UNIQUE,
+    username VARCHAR(255) NOT NULL,
     email VARCHAR(255),
     password_hash VARCHAR(255),
+    avatar_url VARCHAR(500),
+    github_access_token TEXT,
     role VARCHAR(50) DEFAULT 'viewer',
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Create unique index on username only for non-github users
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_unique 
+ON users (username) WHERE github_id IS NULL;
 
 -- Pipelines table
 CREATE TABLE IF NOT EXISTS pipelines (
@@ -68,12 +75,4 @@ CREATE TABLE IF NOT EXISTS env_variables (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Insert default admin user (password: admin123)
-INSERT INTO users (username, email, password_hash, role)
-VALUES ('admin', 'admin@bfb.local', '$2b$10$rQZ5QHQK8Uu5QHQK8Uu5QO', 'admin')
-ON CONFLICT (username) DO NOTHING;
-
--- Insert default viewer user
-INSERT INTO users (username, email, password_hash, role)
-VALUES ('viewer', 'viewer@bfb.local', '$2b$10$rQZ5QHQK8Uu5QHQK8Uu5QO', 'viewer')
-ON CONFLICT (username) DO NOTHING;
+-- Note: Default users removed - first GitHub OAuth user becomes admin

@@ -27,7 +27,12 @@ const pipelinesRouter = require('./routes/pipelines')
 const webhooksRouter = require('./routes/webhooks')
 const vmRouter = require('./routes/vm')
 const envVariablesRouter = require('./routes/envVariables')
+const authRouter = require('./routes/auth')
 
+// Auth routes (no authentication required for OAuth flow)
+app.use('/api/auth', authRouter)
+
+// Protected routes
 app.use('/api/pipelines', pipelinesRouter)
 app.use('/api/webhooks', webhooksRouter)
 app.use('/api/vm', vmRouter)

@@ -105,6 +105,73 @@
   50% { opacity: 0.5; }
 }
 
+/* User section */
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+}
+
+.user-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.user-role {
+  font-size: 0.6875rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-role.role-admin {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.user-role.role-developer {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.user-role.role-viewer {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+}
+
+.btn-logout {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
 /* Main content */
 .main {
   flex: 1;

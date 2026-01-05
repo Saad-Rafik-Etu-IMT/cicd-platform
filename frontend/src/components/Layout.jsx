@@ -1,7 +1,16 @@
-import { Outlet, Link } from 'react-router-dom'
+import { Outlet, Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import './Layout.css'
 
 export default function Layout() {
+  const { user, logout, hasPermission } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   return (
     <div className="layout">
       <header className="header">
@@ -12,11 +21,25 @@ export default function Layout() {
           </Link>
           <nav className="nav">
             <Link to="/">Dashboard</Link>
-            <Link to="/env">🔐 Variables</Link>
+            {hasPermission('manage_env') && (
+              <Link to="/env">🔐 Variables</Link>
+            )}
           </nav>
-          <div className="header-status">
-            <span className="status-dot"></span>
-            <span>Connected</span>
+          <div className="user-section">
+            {user && (
+              <>
+                <div className="user-info">
+                  {user.avatar_url && (
+                    <img src={user.avatar_url} alt={user.username} className="user-avatar" />
+                  )}
+                  <span className="user-name">{user.username}</span>
+                  <span className={`user-role role-${user.role}`}>{user.role}</span>
+                </div>
+                <button className="btn-logout" onClick={handleLogout}>
+                  Déconnexion
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>

@@ -16,6 +16,8 @@
     "socket.io": "^4.7.2",
     "ssh2": "^1.14.0",
     "dotenv": "^16.3.1",
-    "axios": "^1.6.2"
+    "axios": "^1.6.2",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3"
   }
 }
