@@ -19,7 +19,8 @@ export default function Dashboard() {
   const fetchPipelines = async () => {
     try {
       const response = await api.get('/pipelines')
-      setPipelines(response.data)
+      setPipelines(response.data.pipelines || [])
+      setError(null)
       setLoading(false)
     } catch (err) {
       setError('Erreur de connexion au serveur')
