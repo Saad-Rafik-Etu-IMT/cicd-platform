@@ -39,17 +39,12 @@ export function StatusChart({ pipelines }) {
     datasets: [{
       data: [stats.success, stats.failed, stats.running, stats.pending],
       backgroundColor: [
-        '#22c55e',
+        '#10b981',
         '#ef4444',
-        '#f59e0b',
-        '#6b7280'
+        '#0066FF',
+        '#d1d5db'
       ],
-      borderColor: [
-        '#16a34a',
-        '#dc2626',
-        '#d97706',
-        '#4b5563'
-      ],
+      borderColor: '#ffffff',
       borderWidth: 2
     }]
   }
@@ -61,9 +56,9 @@ export function StatusChart({ pipelines }) {
       legend: {
         position: 'bottom',
         labels: {
-          color: '#94a3b8',
+          color: '#6b7280',
           padding: 15,
-          font: { size: 12 }
+          font: { size: 11 }
         }
       }
     }
@@ -71,7 +66,7 @@ export function StatusChart({ pipelines }) {
 
   return (
     <div className="chart-container">
-      <h3>📊 Statut des Pipelines</h3>
+      <h3>Statut des Pipelines</h3>
       <div className="chart-wrapper">
         <Doughnut data={data} options={options} />
       </div>
@@ -113,8 +108,8 @@ export function TrendChart({ pipelines }) {
       {
         label: 'Réussis',
         data: successByDay,
-        borderColor: '#22c55e',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.08)',
         fill: true,
         tension: 0.4
       },
@@ -122,7 +117,7 @@ export function TrendChart({ pipelines }) {
         label: 'Échoués',
         data: failedByDay,
         borderColor: '#ef4444',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        backgroundColor: 'rgba(239, 68, 68, 0.08)',
         fill: true,
         tension: 0.4
       }
@@ -136,21 +131,21 @@ export function TrendChart({ pipelines }) {
       legend: {
         position: 'bottom',
         labels: {
-          color: '#94a3b8',
+          color: '#6b7280',
           padding: 15
         }
       }
     },
     scales: {
       x: {
-        grid: { color: '#334155' },
-        ticks: { color: '#94a3b8' }
+        grid: { color: '#e5e7eb' },
+        ticks: { color: '#6b7280' }
       },
       y: {
         beginAtZero: true,
-        grid: { color: '#334155' },
+        grid: { color: '#e5e7eb' },
         ticks: { 
-          color: '#94a3b8',
+          color: '#6b7280',
           stepSize: 1
         }
       }
@@ -159,7 +154,7 @@ export function TrendChart({ pipelines }) {
 
   return (
     <div className="chart-container">
-      <h3>📈 Tendance (7 derniers jours)</h3>
+      <h3>Tendance (7 jours)</h3>
       <div className="chart-wrapper">
         <Line data={data} options={options} />
       </div>
@@ -191,8 +186,8 @@ export function DurationChart({ pipelines }) {
     datasets: [{
       label: 'Durée (secondes)',
       data: durations,
-      borderColor: '#2563eb',
-      backgroundColor: 'rgba(37, 99, 235, 0.2)',
+      borderColor: '#0066FF',
+      backgroundColor: 'rgba(0, 102, 255, 0.08)',
       fill: true,
       tension: 0.3
     }]
@@ -206,26 +201,26 @@ export function DurationChart({ pipelines }) {
       title: {
         display: true,
         text: `Moyenne: ${avgDuration}s`,
-        color: '#94a3b8',
-        font: { size: 14 }
+        color: '#6b7280',
+        font: { size: 12 }
       }
     },
     scales: {
       x: {
-        grid: { color: '#334155' },
-        ticks: { color: '#94a3b8' }
+        grid: { color: '#e5e7eb' },
+        ticks: { color: '#6b7280' }
       },
       y: {
         beginAtZero: true,
-        grid: { color: '#334155' },
-        ticks: { color: '#94a3b8' }
+        grid: { color: '#e5e7eb' },
+        ticks: { color: '#6b7280' }
       }
     }
   }
 
   return (
     <div className="chart-container">
-      <h3>⏱️ Durée d'exécution</h3>
+      <h3>Durée d'exécution</h3>
       <div className="chart-wrapper">
         <Line data={data} options={options} />
       </div>

@@ -1,27 +1,44 @@
+/* ============================================
+   Charts - Clean Data Visualization
+   ============================================ */
+
 .charts-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
 }
 
 .chart-container {
   background: var(--bg-card);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-subtle);
+  transition: border-color var(--transition-base);
+}
+
+.chart-container:hover {
+  border-color: var(--border-default);
 }
 
 .chart-container h3 {
-  margin-bottom: 1rem;
-  color: var(--text-primary);
-  font-size: 1rem;
-  font-weight: 600;
+  margin-bottom: var(--space-md);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .chart-wrapper {
-  height: 220px;
+  height: 180px;
   position: relative;
+}
+
+@media (max-width: 1200px) {
+  .charts-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
@@ -30,6 +47,6 @@
   }
   
   .chart-wrapper {
-    height: 200px;
+    height: 160px;
   }
 }

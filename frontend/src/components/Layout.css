@@ -1,13 +1,20 @@
+/* ============================================
+   Layout - Clean Financial App Structure
+   ============================================ */
+
 .layout {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background: var(--bg-primary);
 }
 
+/* Header - Minimal, functional */
 .header {
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
-  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 var(--space-xl);
+  height: 56px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -19,33 +26,48 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 100%;
 }
 
+/* Logo - Clean wordmark */
 .logo {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
+  gap: var(--space-sm);
+  font-size: 0.9375rem;
+  font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .logo:hover {
   text-decoration: none;
+  color: var(--text-primary);
 }
 
 .logo-icon {
-  font-size: 1.5rem;
+  font-size: 1.125rem;
+  opacity: 0.9;
 }
 
+/* Navigation - Understated tabs */
 .nav {
   display: flex;
-  gap: 2rem;
+  gap: var(--space-xs);
+  height: 100%;
 }
 
 .nav a {
-  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-md);
+  color: var(--text-muted);
   font-weight: 500;
+  font-size: 0.8125rem;
+  position: relative;
+  transition: color var(--transition-fast);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
 }
 
 .nav a:hover {
@@ -53,35 +75,76 @@
   text-decoration: none;
 }
 
+.nav a.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+/* Status indicator - Quiet */
 .header-status {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background: var(--success);
   border-radius: 50%;
-  animation: pulse 2s infinite;
 }
 
+.status-dot.connected {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Main content */
 .main {
   flex: 1;
-  padding: 2rem;
+  padding: var(--space-xl);
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }
 
+/* Footer - Minimal */
 .footer {
-  background: var(--bg-card);
-  border-top: 1px solid var(--border);
-  padding: 1rem 2rem;
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-md) var(--space-xl);
   text-align: center;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  background: var(--bg-card);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 var(--space-md);
+    height: 52px;
+  }
+  
+  .nav {
+    gap: 0;
+  }
+  
+  .nav a {
+    padding: 0 var(--space-sm);
+    font-size: 0.75rem;
+  }
+  
+  .main {
+    padding: var(--space-md);
+  }
+  
+  .header-status {
+    display: none;
+  }
 }
