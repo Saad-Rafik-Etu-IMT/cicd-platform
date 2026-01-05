@@ -56,18 +56,20 @@ services:
       NODE_ENV: production
       PORT: 3001
       # Database
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: cicd_db
-      DB_USER: cicd_user
-      DB_PASSWORD: cicd_pass
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: cicd_db
+      POSTGRES_USER: cicd_user
+      POSTGRES_PASSWORD: cicd_pass
       # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Pipeline mode
+      PIPELINE_MODE: simulate
       # GitHub (à configurer)
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-your_webhook_secret}
       # VM SSH (à configurer)
-      VM_IP: ${VM_IP:-192.168.1.100}
+      VM_HOST: ${VM_HOST:-192.168.1.100}
       VM_USER: ${VM_USER:-deployer}
       SSH_KEY_PATH: /app/ssh/vm_deployer
       # SonarQube (optionnel)

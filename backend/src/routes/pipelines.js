@@ -56,7 +56,7 @@ router.post('/trigger', async (req, res) => {
     
     // Create pipeline record
     const result = await pool.query(
-      `INSERT INTO pipelines (repo_url, branch, commit_hash, status, triggered_by)
+      `INSERT INTO pipelines (repo_url, branch, commit_hash, status, trigger_type)
        VALUES ($1, $2, $3, 'pending', 'manual')
        RETURNING *`,
       [repo_url, branch, commit_hash || null]

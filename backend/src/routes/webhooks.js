@@ -27,7 +27,7 @@ router.post('/github', async (req, res) => {
     
     // Create pipeline
     const result = await pool.query(
-      `INSERT INTO pipelines (repo_url, branch, commit_hash, status, triggered_by)
+      `INSERT INTO pipelines (repo_url, branch, commit_hash, status, trigger_type)
        VALUES ($1, $2, $3, 'pending', $4)
        RETURNING *`,
       [repoUrl, branch, commitHash, `github:${pusher}`]

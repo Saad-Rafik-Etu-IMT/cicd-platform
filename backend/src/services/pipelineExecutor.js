@@ -39,7 +39,7 @@ async function executePipeline(pipeline, io) {
     
     // Pipeline completed successfully
     await pool.query(
-      'UPDATE pipelines SET status = $1, finished_at = NOW() WHERE id = $2',
+      'UPDATE pipelines SET status = $1, completed_at = NOW() WHERE id = $2',
       ['success', pipeline.id]
     )
     
@@ -55,7 +55,7 @@ async function executePipeline(pipeline, io) {
   } catch (error) {
     // Pipeline failed
     await pool.query(
-      'UPDATE pipelines SET status = $1, finished_at = NOW() WHERE id = $2',
+      'UPDATE pipelines SET status = $1, completed_at = NOW() WHERE id = $2',
       ['failed', pipeline.id]
     )
     
@@ -88,7 +88,7 @@ async function executeStep(pipeline, stepName, io, room) {
     // Update log with success
     await pool.query(
       `UPDATE pipeline_logs 
-       SET status = 'success', output = $1, finished_at = NOW()
+       SET status = 'success', output = $1, completed_at = NOW()
        WHERE pipeline_id = $2 AND step_name = $3`,
       [output, pipeline.id, stepName]
     )
@@ -99,7 +99,7 @@ async function executeStep(pipeline, stepName, io, room) {
     // Update log with failure
     await pool.query(
       `UPDATE pipeline_logs 
-       SET status = 'failed', output = $1, finished_at = NOW()
+       SET status = 'failed', output = $1, completed_at = NOW()
        WHERE pipeline_id = $2 AND step_name = $3`,
       [error.message, pipeline.id, stepName]
     )
