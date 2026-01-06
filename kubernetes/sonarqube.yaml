@@ -1,0 +1,277 @@
+# ========================================
+# SonarQube - Analyse de qualité de code
+# ========================================
+
+# PostgreSQL pour SonarQube
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonar-db-pvc
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonar-db
+    app.kubernetes.io/component: quality
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonar-db
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonar-db
+    app.kubernetes.io/component: quality
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonar-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: sonar-db
+        app.kubernetes.io/name: sonar-db
+        app.kubernetes.io/component: quality
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          envFrom:
+            - secretRef:
+                name: sonarqube-db-secrets
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "400m"
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - sonar
+                - -d
+                - sonarqube
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - sonar
+                - -d
+                - sonarqube
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: sonar-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonar-db
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonar-db
+    app.kubernetes.io/component: quality
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  selector:
+    app: sonar-db
+
+# SonarQube Server
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-data-pvc
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/component: quality
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-extensions-pvc
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/component: quality
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-logs-pvc
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/component: quality
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cicd-sonarqube
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/component: quality
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cicd-sonarqube
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: cicd-sonarqube
+        app.kubernetes.io/name: sonarqube
+        app.kubernetes.io/component: quality
+    spec:
+      # SonarQube nécessite des paramètres sysctl spécifiques
+      initContainers:
+        - name: init-sysctl
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              sysctl -w vm.max_map_count=524288 || true
+              sysctl -w fs.file-max=131072 || true
+          securityContext:
+            privileged: true
+            runAsUser: 0
+      containers:
+        - name: sonarqube
+          image: sonarqube:lts-community
+          ports:
+            - containerPort: 9000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: sonarqube-config
+            - secretRef:
+                name: sonarqube-db-secrets
+          volumeMounts:
+            - name: sonarqube-data
+              mountPath: /opt/sonarqube/data
+            - name: sonarqube-extensions
+              mountPath: /opt/sonarqube/extensions
+            - name: sonarqube-logs
+              mountPath: /opt/sonarqube/logs
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /api/system/status
+              port: 9000
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /api/system/status
+              port: 9000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 10
+      volumes:
+        - name: sonarqube-data
+          persistentVolumeClaim:
+            claimName: sonarqube-data-pvc
+        - name: sonarqube-extensions
+          persistentVolumeClaim:
+            claimName: sonarqube-extensions-pvc
+        - name: sonarqube-logs
+          persistentVolumeClaim:
+            claimName: sonarqube-logs-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cicd-sonarqube
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/component: quality
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9000
+      targetPort: 9000
+      name: http
+  selector:
+    app: cicd-sonarqube
+---
+# Service NodePort pour accès externe (dev/test)
+apiVersion: v1
+kind: Service
+metadata:
+  name: cicd-sonarqube-nodeport
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/component: quality
+spec:
+  type: NodePort
+  ports:
+    - port: 9000
+      targetPort: 9000
+      nodePort: 30090
+      name: http
+  selector:
+    app: cicd-sonarqube
