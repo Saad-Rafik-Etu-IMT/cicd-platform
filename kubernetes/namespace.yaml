@@ -1,0 +1,10 @@
+# ========================================
+# Namespace pour la plateforme CI/CD
+# ========================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cicd-platform
+  labels:
+    app.kubernetes.io/name: cicd-platform
+    app.kubernetes.io/component: infrastructure

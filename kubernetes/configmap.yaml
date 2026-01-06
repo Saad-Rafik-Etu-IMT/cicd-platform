@@ -1,0 +1,54 @@
+# ========================================
+# ConfigMaps pour la plateforme CI/CD
+# ========================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cicd-backend-config
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: cicd-backend
+    app.kubernetes.io/component: backend
+data:
+  NODE_ENV: "production"
+  PORT: "3002"
+  FRONTEND_URL: "http://cicd-frontend:80"
+  BACKEND_URL: "http://cicd-backend:3002"
+  # Database
+  POSTGRES_HOST: "cicd-postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "cicd_db"
+  # Redis
+  REDIS_HOST: "cicd-redis"
+  REDIS_PORT: "6379"
+  # Pipeline mode
+  PIPELINE_MODE: "simulate"
+  # SonarQube
+  SONAR_URL: "http://cicd-sonarqube:9000"
+  SONAR_EXTERNAL_URL: "http://localhost:9000"
+  # App repo
+  APP_REPO_URL: "https://github.com/Saad-Rafik-Etu-IMT/demo.git"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cicd-frontend-config
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: cicd-frontend
+    app.kubernetes.io/component: frontend
+data:
+  VITE_API_URL: "http://localhost:3002"
+  VITE_WS_URL: "ws://localhost:3002"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sonarqube-config
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/component: quality
+data:
+  SONAR_JDBC_URL: "jdbc:postgresql://sonar-db:5432/sonarqube"
+  SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
