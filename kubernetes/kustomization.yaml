@@ -1,0 +1,45 @@
+# ========================================
+# Kustomization pour la plateforme CI/CD
+# ========================================
+# Permet de personnaliser le déploiement
+# Usage: kubectl apply -k kubernetes/
+# ========================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cicd-platform
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - postgres-init-configmap.yaml
+  - secrets.yaml
+  - postgres.yaml
+  - redis.yaml
+  - backend.yaml
+  - frontend.yaml
+  - sonarqube.yaml
+  # Décommentez selon vos besoins:
+  # - ingress.yaml
+  # - hpa.yaml
+  # - network-policy.yaml
+
+# Labels communs
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: cicd-platform
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+# Annotations communes
+commonAnnotations:
+  app.kubernetes.io/version: "1.0.0"
+
+# Images à utiliser (personnalisez selon votre registry)
+images:
+  - name: cicd-backend
+    newName: cicd-backend
+    newTag: latest
+  - name: cicd-frontend
+    newName: cicd-frontend
+    newTag: latest
