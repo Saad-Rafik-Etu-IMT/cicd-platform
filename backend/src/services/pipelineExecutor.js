@@ -1,5 +1,6 @@
 const pool = require('../config/database')
 const sshService = require('./sshService')
+const sonarService = require('./sonarService')
 const { exec } = require('child_process')
 const { promisify } = require('util')
 const path = require('path')
@@ -146,15 +147,63 @@ async function executeRealStep(stepName, pipeline) {
       return `BUILD SUCCESS\n${buildOut}`
 
     case 'SonarQube Analysis':
-      // Skip if SonarQube not configured
-      if (!process.env.SONAR_HOST_URL) {
-        return 'SonarQube skipped (not configured)'
+      // Check if SonarQube is available
+      const sonarAvailable = await sonarService.isAvailable()
+      if (!sonarAvailable) {
+        return 'SonarQube skipped (server not available)'
       }
-      const { stdout: sonarOut } = await execAsync(
-        `cd ${workDir} && ./mvnw sonar:sonar -Dsonar.host.url=${process.env.SONAR_HOST_URL}`,
-        { timeout: 300000 }
+      
+      // Extract project key from repo URL
+      const repoName = pipeline.repo_url.split('/').pop().replace('.git', '')
+      const projectKey = `cicd-${repoName}-${pipeline.branch}`
+      
+      // Create project if not exists
+      await sonarService.createProject(projectKey, repoName)
+      
+      // Detect build tool and run appropriate analysis
+      let analysisResult
+      try {
+        await fs.access(path.join(workDir, 'pom.xml'))
+        analysisResult = await sonarService.runMavenAnalysis(workDir, projectKey)
+      } catch {
+        try {
+          await fs.access(path.join(workDir, 'build.gradle'))
+          analysisResult = await sonarService.runGradleAnalysis(workDir, projectKey)
+        } catch {
+          // Use sonar-scanner for other projects
+          analysisResult = await sonarService.runAnalysis(workDir, projectKey, {
+            projectName: repoName,
+            sources: '.'
+          })
+        }
+      }
+      
+      if (!analysisResult.success) {
+        throw new Error(`SonarQube analysis failed: ${analysisResult.error}`)
+      }
+      
+      // Wait for analysis to be processed
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      
+      // Get quality gate status
+      const qgStatus = await sonarService.getQualityGateStatus(projectKey)
+      const report = await sonarService.generateReport(projectKey)
+      
+      // Store sonar results in pipeline
+      await pool.query(
+        `UPDATE pipelines SET 
+         sonar_project_key = $1, 
+         sonar_quality_gate = $2
+         WHERE id = $3`,
+        [projectKey, qgStatus.status, pipeline.id]
       )
-      return `SonarQube analysis completed\n${sonarOut}`
+      
+      const summary = report.success ? report.summary : {}
+      return `SonarQube Analysis completed
+Quality Gate: ${qgStatus.status || 'N/A'}
+Bugs: ${summary.bugs || 0} | Vulnerabilities: ${summary.vulnerabilities || 0}
+Code Smells: ${summary.codeSmells || 0} | Coverage: ${summary.coverage || 0}%
+Dashboard: ${report.dashboardUrl || 'N/A'}`
 
     case 'Build Docker Image':
       const { stdout: dockerOut } = await execAsync(
@@ -201,7 +250,17 @@ async function simulateStep(stepName, pipeline) {
       return 'BUILD SUCCESS - bfb-management-0.0.1-SNAPSHOT.jar'
     
     case 'SonarQube Analysis':
-      return 'Quality Gate: PASSED - Coverage: 85%'
+      // Simulate analysis with realistic output
+      const simRepoName = pipeline.repo_url.split('/').pop().replace('.git', '')
+      const simProjectKey = `cicd-${simRepoName}-${pipeline.branch}`
+      const simReport = sonarService.simulateAnalysis(simProjectKey)
+      
+      return `SonarQube Analysis completed
+Quality Gate: ${simReport.qualityGate.status}
+Bugs: ${simReport.summary.bugs} | Vulnerabilities: ${simReport.summary.vulnerabilities}
+Code Smells: ${simReport.summary.codeSmells} | Coverage: ${simReport.summary.coverage}%
+Maintainability: ${simReport.summary.maintainabilityRating} | Security: ${simReport.summary.securityRating}
+Dashboard: ${simReport.dashboardUrl}`
     
     case 'Build Docker Image':
       return `Built image: bfb-management:${pipeline.commit_hash || 'latest'}`

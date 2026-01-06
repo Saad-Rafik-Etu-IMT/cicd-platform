@@ -35,7 +35,8 @@ Le mode simulation permet de tester toute l'interface et le flux sans avoir beso
 4. **Accéder à l'application**
 
    - **Frontend (Dashboard)** : [http://localhost:3000](http://localhost:3000)
-   - **Backend API** : [http://localhost:3001](http://localhost:3001)
+   - **Backend API** : [http://localhost:3002](http://localhost:3002)
+   - **SonarQube** : [http://localhost:9000](http://localhost:9000)
    - **Base de données** : Port 5433
    - **Redis** : Port 6379
 5. **Tester un pipeline**
@@ -75,14 +76,33 @@ VM_SSH_PRIVATE_KEY=<CONTENU_DE_LA_CLE_PRIVEE>
 # Ou utilisez un chemin vers la clé dans docker-compose.yml
 ```
 
-### 3. Configurer SonarQube (Optionnel)
+### 3. Configurer SonarQube
 
-Pour activer l'analyse de code réelle :
+SonarQube est intégré dans le docker-compose. Pour le configurer :
 
-```env
-SONAR_HOST_URL=http://<IP_SONAR>:9000
-SONAR_TOKEN=<VOTRE_TOKEN>
-```
+1. **Accéder à SonarQube** : [http://localhost:9000](http://localhost:9000)
+   - Login par défaut : `admin` / `admin`
+   - Changez le mot de passe à la première connexion
+
+2. **Générer un Token API** :
+   - Allez dans `Administration > Security > Users`
+   - Cliquez sur l'icône de token pour votre utilisateur
+   - Créez un token et copiez-le
+
+3. **Configurer le Backend** :
+   Modifiez `backend/.env` :
+   ```env
+   SONAR_URL=http://sonarqube:9000
+   SONAR_EXTERNAL_URL=http://localhost:9000
+   SONAR_TOKEN=<VOTRE_TOKEN>
+   ```
+
+4. **Relancer les conteneurs** :
+   ```bash
+   docker-compose up -d backend
+   ```
+
+L'analyse SonarQube sera exécutée automatiquement lors de chaque pipeline.
 
 ## 🏗️ Architecture
 

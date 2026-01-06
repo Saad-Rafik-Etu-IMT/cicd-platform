@@ -22,6 +22,7 @@ export default function Layout() {
           </Link>
           <nav className="nav">
             <Link to="/">Dashboard</Link>
+            <Link to="/sonar">📊 SonarQube</Link>
             {hasPermission('manage_env') && (
               <Link to="/env" className="nav-link-icon"><span className="nav-icon">{Icons.key}</span>Variables</Link>
             )}

@@ -28,6 +28,7 @@ const webhooksRouter = require('./routes/webhooks')
 const vmRouter = require('./routes/vm')
 const envVariablesRouter = require('./routes/envVariables')
 const authRouter = require('./routes/auth')
+const sonarRouter = require('./routes/sonar')
 
 // Auth routes (no authentication required for OAuth flow)
 app.use('/api/auth', authRouter)
@@ -37,6 +38,7 @@ app.use('/api/pipelines', pipelinesRouter)
 app.use('/api/webhooks', webhooksRouter)
 app.use('/api/vm', vmRouter)
 app.use('/api/env', envVariablesRouter)
+app.use('/api/sonar', sonarRouter)
 
 // Health check
 app.get('/health', (req, res) => {

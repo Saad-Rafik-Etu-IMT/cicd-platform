@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS pipelines (
     branch VARCHAR(255) DEFAULT 'master',
     repo_url VARCHAR(500),
     trigger_type VARCHAR(50) DEFAULT 'manual',
+    sonar_project_key VARCHAR(255),
+    sonar_quality_gate VARCHAR(50),
     started_at TIMESTAMP,
     completed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()

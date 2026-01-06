@@ -214,6 +214,16 @@ export default function PipelineDetail() {
             {pipeline.commit_hash && (
               <span>Commit: <code>{pipeline.commit_hash.substring(0, 7)}</code></span>
             )}
+            {pipeline.sonar_project_key && (
+              <a 
+                href={`${import.meta.env.VITE_SONAR_URL || 'http://localhost:9000'}/dashboard?id=${pipeline.sonar_project_key}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sonar-link"
+              >
+                📊 SonarQube: {pipeline.sonar_quality_gate || 'N/A'}
+              </a>
+            )}
           </div>
         </div>
         <div className="header-actions">
