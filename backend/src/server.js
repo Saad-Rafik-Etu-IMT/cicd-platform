@@ -17,7 +17,14 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors())
-app.use(express.json())
+
+// Custom JSON parser that preserves raw body for webhook signature verification
+app.use(express.json({
+  verify: (req, res, buf) => {
+    // Store raw body for webhook signature verification
+    req.rawBody = buf
+  }
+}))
 
 // Make io available to routes
 app.set('io', io)

@@ -107,13 +107,59 @@ L'analyse SonarQube sera exécutée automatiquement lors de chaque pipeline.
 ## 🏗️ Architecture
 
 - **Frontend** : React + Vite (Port 3000)
-- **Backend** : Node.js + Express + Socket.io (Port 3001)
+- **Backend** : Node.js + Express + Socket.io (Port 3002)
 - **Base de données** : PostgreSQL (Port 5433)
 - **File d'attente** : Redis (Port 6379)
+- **SonarQube** : Analyse de qualité (Port 9000)
 - **Worker** : Gère l'exécution des pipelines (intégré au backend)
+
+## 🔗 Configuration du Webhook GitHub
+
+Pour que GitHub déclenche automatiquement un pipeline lors d'un push :
+
+### 1. Générer un secret sécurisé
+
+```bash
+openssl rand -hex 32
+```
+
+### 2. Configurer le secret dans le backend
+
+Modifiez `backend/.env` :
+```env
+GITHUB_WEBHOOK_SECRET=<votre-secret-généré>
+```
+
+### 3. Configurer le Webhook dans GitHub
+
+1. Allez dans votre dépôt GitHub → `Settings` → `Webhooks` → `Add webhook`
+2. Configurez :
+   - **Payload URL** : `http://<VOTRE_IP>:3002/api/webhooks/github`
+   - **Content type** : `application/json`
+   - **Secret** : Le même secret que dans `.env`
+   - **Events** : Sélectionnez "Just the push event"
+3. Cliquez sur "Add webhook"
+
+### 4. Vérifier la configuration
+
+```bash
+curl http://localhost:3002/api/webhooks/github/verify
+```
+
+Réponse attendue :
+```json
+{"configured": true, "message": "Webhook secret is configured"}
+```
+
+### Sécurité du Webhook
+
+- Les webhooks utilisent HMAC-SHA256 pour vérifier l'authenticité
+- Les requêtes sans signature valide sont rejetées (erreur 401)
+- Une comparaison à temps constant est utilisée pour prévenir les attaques temporelles
 
 ## 🔒 Sécurité
 
 - **Isolation** : Chaque pipeline s'exécute dans un dossier temporaire isolé.
 - **SSH** : Connexion sécurisée par clé privée uniquement.
 - **Secrets** : Les variables sensibles sont gérées via `.env`.
+- **Webhooks** : Vérification de signature HMAC-SHA256.
