@@ -1,6 +1,7 @@
 const pool = require('../config/database')
 const sshService = require('./sshService')
 const sonarService = require('./sonarService')
+const pentestService = require('./pentestService')
 const { exec } = require('child_process')
 const { promisify } = require('util')
 const path = require('path')
@@ -19,7 +20,8 @@ const STEPS = [
   'SonarQube Analysis',
   'Build Docker Image',
   'Deploy to VM',
-  'Health Check'
+  'Health Check',
+  'Security Scan'
 ]
 
 async function executePipeline(pipeline, io) {
@@ -225,6 +227,30 @@ Dashboard: ${report.dashboardUrl || 'N/A'}`
       }
       return 'Health check passed: HTTP 200 OK'
 
+    case 'Security Scan':
+      // Run penetration test against deployed application
+      const pentestTargetUrl = process.env.PENTEST_TARGET_URL || `http://${process.env.VM_HOST}:8080`
+      
+      const pentestResult = await pentestService.runFullPentest(pentestTargetUrl, {
+        useZap: true,
+        quickScan: true
+      })
+      
+      // Store pentest results in pipeline
+      const pentestStatus = pentestResult.vulnerabilities.high > 0 ? 'critical' :
+                           pentestResult.vulnerabilities.medium > 0 ? 'warning' : 'passed'
+      
+      await pool.query(
+        `UPDATE pipelines SET 
+         pentest_result = $1,
+         pentest_status = $2
+         WHERE id = $3`,
+        [JSON.stringify(pentestResult), pentestStatus, pipeline.id]
+      )
+      
+      // Generate report for output
+      return pentestService.generatePipelineReport(pentestResult)
+
     default:
       return 'Step completed'
   }
@@ -270,6 +296,11 @@ Dashboard: ${simReport.dashboardUrl}`
     
     case 'Health Check':
       return 'Health check passed: HTTP 200 OK'
+    
+    case 'Security Scan':
+      // Simulate penetration test
+      const simPentestResult = pentestService.simulatePentest('http://localhost:8080')
+      return pentestService.generatePipelineReport(simPentestResult)
     
     default:
       return 'Step completed'

@@ -7,6 +7,7 @@ import PipelineDetail from './pages/PipelineDetail'
 import EnvVariables from './pages/EnvVariables'
 import Users from './pages/Users'
 import SonarDashboard from './pages/SonarDashboard'
+import PentestDashboard from './pages/PentestDashboard'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import Layout from './components/Layout'
@@ -65,6 +66,7 @@ function AppContent() {
               </ProtectedRoute>
             } />
             <Route path="/sonar" element={<SonarDashboard />} />
+            <Route path="/security" element={<PentestDashboard />} />
             <Route path="/users" element={
               <ProtectedRoute requiredPermission="manage_users">
                 <Users />

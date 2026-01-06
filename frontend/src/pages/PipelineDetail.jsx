@@ -13,7 +13,8 @@ const PIPELINE_STEPS = [
   { name: 'SonarQube Analysis', icon: 'scan' },
   { name: 'Build Docker Image', icon: 'docker' },
   { name: 'Deploy to VM', icon: 'deploy' },
-  { name: 'Health Check', icon: 'health' }
+  { name: 'Health Check', icon: 'health' },
+  { name: 'Security Scan', icon: 'security' }
 ]
 
 export default function PipelineDetail() {

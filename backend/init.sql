@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS pipelines (
     trigger_type VARCHAR(50) DEFAULT 'manual',
     sonar_project_key VARCHAR(255),
     sonar_quality_gate VARCHAR(50),
+    pentest_result TEXT,
+    pentest_status VARCHAR(50),
     started_at TIMESTAMP,
     completed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
@@ -76,5 +78,16 @@ CREATE TABLE IF NOT EXISTS env_variables (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Pentest reports table
+CREATE TABLE IF NOT EXISTS pentest_reports (
+    id SERIAL PRIMARY KEY,
+    target_url VARCHAR(500) NOT NULL,
+    result TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pentest_reports_created_at ON pentest_reports(created_at DESC);
 
 -- Note: Default users removed - first GitHub OAuth user becomes admin
