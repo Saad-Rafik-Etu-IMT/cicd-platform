@@ -1,0 +1,165 @@
+# ========================================
+# Network Policies - Sécurité réseau
+# ========================================
+# Restreint le trafic entre les pods
+# ========================================
+
+# Politique par défaut: refuser tout trafic entrant
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: cicd-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+# Autoriser le trafic vers le frontend
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend
+  namespace: cicd-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: cicd-frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 80
+
+# Autoriser le trafic vers le backend
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend
+  namespace: cicd-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: cicd-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    # Depuis le frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: cicd-frontend
+      ports:
+        - protocol: TCP
+          port: 3002
+    # Depuis l'ingress
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3002
+    # Depuis l'extérieur (NodePort)
+    - ports:
+        - protocol: TCP
+          port: 3002
+
+# Autoriser le trafic vers PostgreSQL (CI/CD)
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres
+  namespace: cicd-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: cicd-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: cicd-backend
+      ports:
+        - protocol: TCP
+          port: 5432
+
+# Autoriser le trafic vers Redis
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis
+  namespace: cicd-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: cicd-redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: cicd-backend
+      ports:
+        - protocol: TCP
+          port: 6379
+
+# Autoriser le trafic vers SonarQube
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-sonarqube
+  namespace: cicd-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: cicd-sonarqube
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: cicd-backend
+      ports:
+        - protocol: TCP
+          port: 9000
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9000
+
+# Autoriser le trafic vers SonarQube DB
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-sonar-db
+  namespace: cicd-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: sonar-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: cicd-sonarqube
+      ports:
+        - protocol: TCP
+          port: 5432
