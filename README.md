@@ -113,6 +113,52 @@ L'analyse SonarQube sera exécutée automatiquement lors de chaque pipeline.
 - **SonarQube** : Analyse de qualité (Port 9000)
 - **Worker** : Gère l'exécution des pipelines (intégré au backend)
 
+## ☸️ Déploiement Kubernetes
+
+La plateforme peut être déployée sur Kubernetes pour une meilleure scalabilité et résilience.
+
+### Prérequis Kubernetes
+
+- Un cluster Kubernetes (Minikube, Kind, Docker Desktop, AKS, EKS, GKE)
+- kubectl configuré
+- (Optionnel) Ingress Controller (nginx-ingress recommandé)
+
+### Déploiement rapide
+
+**Windows PowerShell:**
+```powershell
+cd kubernetes
+.\deploy.ps1 deploy
+```
+
+**Linux/Mac:**
+```bash
+cd kubernetes
+chmod +x deploy.sh
+./deploy.sh deploy
+```
+
+**Avec Kustomize:**
+```bash
+kubectl apply -k kubernetes/
+```
+
+### Accès aux services
+
+Via Port-Forward (recommandé pour le développement):
+```bash
+kubectl port-forward svc/cicd-frontend 3000:80 -n cicd-platform
+kubectl port-forward svc/cicd-backend 3002:3002 -n cicd-platform
+kubectl port-forward svc/cicd-sonarqube 9000:9000 -n cicd-platform
+```
+
+Via NodePort:
+- Frontend: http://\<node-ip\>:30000
+- Backend: http://\<node-ip\>:30002
+- SonarQube: http://\<node-ip\>:30090
+
+📚 Voir le [README Kubernetes](./kubernetes/README.md) pour plus de détails.
+
 ## 🔗 Configuration du Webhook GitHub
 
 Pour que GitHub déclenche automatiquement un pipeline lors d'un push :
