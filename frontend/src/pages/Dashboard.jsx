@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
+import { Icons } from '../components/Icons'
 import { StatusChart, TrendChart, DurationChart } from '../components/Charts'
 import './Dashboard.css'
 
