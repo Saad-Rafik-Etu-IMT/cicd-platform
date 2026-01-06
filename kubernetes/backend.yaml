@@ -1,0 +1,109 @@
+# ========================================
+# Backend Node.js - API + WebSocket
+# ========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cicd-backend
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: cicd-backend
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cicd-backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: cicd-backend
+        app.kubernetes.io/name: cicd-backend
+        app.kubernetes.io/component: backend
+    spec:
+      containers:
+        - name: backend
+          image: cicd-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3002
+              name: http
+          envFrom:
+            - configMapRef:
+                name: cicd-backend-config
+            - secretRef:
+                name: cicd-backend-secrets
+          volumeMounts:
+            - name: ssh-keys
+              mountPath: /app/ssh
+              readOnly: true
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: ssh-keys
+          secret:
+            secretName: ssh-keys
+            optional: true
+            defaultMode: 0400
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cicd-backend
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: cicd-backend
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3002
+      targetPort: 3002
+      name: http
+  selector:
+    app: cicd-backend
+---
+# Service NodePort pour accès externe (dev/test)
+apiVersion: v1
+kind: Service
+metadata:
+  name: cicd-backend-nodeport
+  namespace: cicd-platform
+  labels:
+    app.kubernetes.io/name: cicd-backend
+    app.kubernetes.io/component: backend
+spec:
+  type: NodePort
+  ports:
+    - port: 3002
+      targetPort: 3002
+      nodePort: 30002
+      name: http
+  selector:
+    app: cicd-backend
