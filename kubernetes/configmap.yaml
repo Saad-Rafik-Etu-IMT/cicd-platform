@@ -25,7 +25,7 @@ data:
   PIPELINE_MODE: "production"
   # SonarQube
   SONAR_URL: "http://cicd-sonarqube:9000"
-  SONAR_EXTERNAL_URL: "http://localhost:9001"
+  SONAR_EXTERNAL_URL: "http://localhost:30090"
   # App repo
   APP_REPO_URL: "https://github.com/Saad-Rafik-Etu-IMT/demo.git"
   # Git Polling Configuration (alternative to webhooks)
