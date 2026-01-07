@@ -22,13 +22,13 @@ export default function Layout() {
           </Link>
           <nav className="nav">
             <Link to="/">Dashboard</Link>
-            <Link to="/sonar">📊 SonarQube</Link>
-            <Link to="/security">🔐 Sécurité</Link>
+            <Link to="/sonar"><span className="nav-icon">{Icons.chart}</span>SonarQube</Link>
+            <Link to="/security"><span className="nav-icon">{Icons.shield}</span>Sécurité</Link>
             {hasPermission('manage_env') && (
               <Link to="/env" className="nav-link-icon"><span className="nav-icon">{Icons.key}</span>Variables</Link>
             )}
             {hasPermission('manage_users') && (
-              <Link to="/users">👥 Utilisateurs</Link>
+              <Link to="/users"><span className="nav-icon">{Icons.users}</span>Utilisateurs</Link>
             )}
           </nav>
           <div className="user-section">
