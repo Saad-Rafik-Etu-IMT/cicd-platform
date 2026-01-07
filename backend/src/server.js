@@ -15,6 +15,10 @@ const io = new Server(server, {
   }
 })
 
+// Import Git Poller Service
+const GitPollerService = require('./services/gitPoller')
+const gitPoller = new GitPollerService(io)
+
 // Middleware
 app.use(cors())
 
@@ -26,8 +30,9 @@ app.use(express.json({
   }
 }))
 
-// Make io available to routes
+// Make io and poller available to routes
 app.set('io', io)
+app.set('gitPoller', gitPoller)
 
 // Routes
 const pipelinesRouter = require('./routes/pipelines')
@@ -37,6 +42,7 @@ const envVariablesRouter = require('./routes/envVariables')
 const authRouter = require('./routes/auth')
 const sonarRouter = require('./routes/sonar')
 const pentestRouter = require('./routes/pentest')
+const pollerRouter = require('./routes/poller')
 
 // Auth routes (no authentication required for OAuth flow)
 app.use('/api/auth', authRouter)
@@ -48,6 +54,7 @@ app.use('/api/vm', vmRouter)
 app.use('/api/env', envVariablesRouter)
 app.use('/api/sonar', sonarRouter)
 app.use('/api/pentest', pentestRouter)
+app.use('/api/poller', pollerRouter)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -85,8 +92,17 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3001
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`🚀 CI/CD Backend running on port ${PORT}`)
+  
+  // Start Git Poller if enabled
+  if (process.env.GIT_POLLING_ENABLED === 'true') {
+    console.log('🔄 Git Polling is enabled, starting poller...')
+    await gitPoller.start()
+  } else {
+    console.log('ℹ️  Git Polling is disabled. Enable with GIT_POLLING_ENABLED=true')
+    console.log('   Or start manually via POST /api/poller/start')
+  }
 })
 
 module.exports = { app, io }

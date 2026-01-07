@@ -22,12 +22,16 @@ data:
   REDIS_HOST: "cicd-redis"
   REDIS_PORT: "6379"
   # Pipeline mode
-  PIPELINE_MODE: "simulate"
+  PIPELINE_MODE: "production"
   # SonarQube
   SONAR_URL: "http://cicd-sonarqube:9000"
   SONAR_EXTERNAL_URL: "http://localhost:9001"
   # App repo
   APP_REPO_URL: "https://github.com/Saad-Rafik-Etu-IMT/demo.git"
+  # Git Polling Configuration (alternative to webhooks)
+  GIT_POLLING_ENABLED: "true"
+  GIT_POLL_INTERVAL: "60000"
+  GIT_POLL_BRANCHES: "master"
 ---
 apiVersion: v1
 kind: ConfigMap
