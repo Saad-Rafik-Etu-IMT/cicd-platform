@@ -4,11 +4,15 @@ import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { Icons } from '../components/Icons'
 import { StatusChart, TrendChart, DurationChart } from '../components/Charts'
+import LoadingSpinner from '../components/LoadingSpinner'
+import { useToast } from '../components/Toast'
+import { formatDate, formatDuration } from '../utils/formatters'
 import './Dashboard.css'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
+  const { showToast } = useToast()
   const [pipelines, setPipelines] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -43,8 +47,9 @@ export default function Dashboard() {
         branch: 'master' 
       })
       await fetchPipelines()
+      showToast('Pipeline déclenché avec succès', 'success')
     } catch (err) {
-      alert('Erreur lors du déclenchement du pipeline')
+      showToast('Erreur lors du déclenchement du pipeline', 'error')
     }
     setTriggering(false)
   }
@@ -58,20 +63,6 @@ export default function Dashboard() {
     }
   }
 
-  const formatDate = (date) => {
-    if (!date) return '-'
-    return new Date(date).toLocaleString('fr-FR')
-  }
-
-  const formatDuration = (start, end) => {
-    if (!start || !end) return '-'
-    const duration = new Date(end) - new Date(start)
-    const seconds = Math.floor(duration / 1000)
-    const minutes = Math.floor(seconds / 60)
-    if (minutes > 0) return `${minutes}m ${seconds % 60}s`
-    return `${seconds}s`
-  }
-
   // Statistics
   const stats = {
     total: pipelines.length,
@@ -81,12 +72,7 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Chargement...</p>
-      </div>
-    )
+    return <LoadingSpinner message="Chargement des pipelines..." />
   }
 
   return (
