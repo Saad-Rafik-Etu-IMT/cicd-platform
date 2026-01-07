@@ -36,7 +36,7 @@ Le mode simulation permet de tester toute l'interface et le flux sans avoir beso
 
    - **Frontend (Dashboard)** : [http://localhost:3000](http://localhost:3000)
    - **Backend API** : [http://localhost:3002](http://localhost:3002)
-   - **SonarQube** : [http://localhost:9000](http://localhost:9000)
+   - **SonarQube** : [http://localhost:9001](http://localhost:9001) (login: admin/admin)
    - **Base de données** : Port 5433
    - **Redis** : Port 6379
 5. **Tester un pipeline**
@@ -90,10 +90,12 @@ SonarQube est intégré dans le docker-compose. Pour le configurer :
    - Créez un token et copiez-le
 
 3. **Configurer le Backend** :
-   Modifiez `backend/.env` :
+   Modifiez `.env` :
    ```env
+   # For Docker inter-container communication
    SONAR_URL=http://sonarqube:9000
-   SONAR_EXTERNAL_URL=http://localhost:9000
+   # For browser access (mapped port)
+   SONAR_EXTERNAL_URL=http://localhost:9001
    SONAR_TOKEN=<VOTRE_TOKEN>
    ```
 
