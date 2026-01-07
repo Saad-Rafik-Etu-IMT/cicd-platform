@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
+import { Icons } from '../components/Icons'
+import LoadingSpinner from '../components/LoadingSpinner'
 import './SonarDashboard.css'
 
 export default function SonarDashboard() {
@@ -63,19 +65,14 @@ export default function SonarDashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Chargement de SonarQube...</p>
-      </div>
-    )
+    return <LoadingSpinner message="Chargement de SonarQube..." />
   }
 
   return (
     <div className="sonar-dashboard">
       <div className="page-header">
         <div>
-          <h1>📊 SonarQube</h1>
+          <h1><span className="header-icon">{Icons.chart}</span> SonarQube</h1>
           <p className="subtitle">Analyse de qualité de code</p>
         </div>
         {config?.url && (
@@ -138,7 +135,7 @@ export default function SonarDashboard() {
                 <div className="quality-gate-header">
                   <h3>Quality Gate</h3>
                   <span className="quality-gate-status">
-                    {report.qualityGate?.passed ? '✅ PASSED' : '❌ FAILED'}
+                    {report.qualityGate?.passed ? <><span className="qg-icon">{Icons.success}</span> PASSED</> : <><span className="qg-icon">{Icons.error}</span> FAILED</>}
                   </span>
                 </div>
                 {report.dashboardUrl && (
@@ -157,42 +154,42 @@ export default function SonarDashboard() {
               <div className="metrics-grid">
                 {/* Bugs */}
                 <div className="metric-card bugs">
-                  <div className="metric-icon">🐛</div>
+                  <div className="metric-icon">{Icons.bug}</div>
                   <div className="metric-value">{report.summary?.bugs || 0}</div>
                   <div className="metric-label">Bugs</div>
                 </div>
 
                 {/* Vulnerabilities */}
                 <div className="metric-card vulnerabilities">
-                  <div className="metric-icon">🔓</div>
+                  <div className="metric-icon">{Icons.unlock}</div>
                   <div className="metric-value">{report.summary?.vulnerabilities || 0}</div>
                   <div className="metric-label">Vulnérabilités</div>
                 </div>
 
                 {/* Code Smells */}
                 <div className="metric-card code-smells">
-                  <div className="metric-icon">💨</div>
+                  <div className="metric-icon">{Icons.wind}</div>
                   <div className="metric-value">{report.summary?.codeSmells || 0}</div>
                   <div className="metric-label">Code Smells</div>
                 </div>
 
                 {/* Coverage */}
                 <div className="metric-card coverage">
-                  <div className="metric-icon">📊</div>
+                  <div className="metric-icon">{Icons.chart}</div>
                   <div className="metric-value">{report.summary?.coverage || 0}%</div>
                   <div className="metric-label">Couverture</div>
                 </div>
 
                 {/* Duplications */}
                 <div className="metric-card duplications">
-                  <div className="metric-icon">📋</div>
+                  <div className="metric-icon">{Icons.copy}</div>
                   <div className="metric-value">{report.summary?.duplications || 0}%</div>
                   <div className="metric-label">Duplications</div>
                 </div>
 
                 {/* Lines of Code */}
                 <div className="metric-card loc">
-                  <div className="metric-icon">📝</div>
+                  <div className="metric-icon">{Icons.fileText}</div>
                   <div className="metric-value">
                     {(report.summary?.linesOfCode || 0).toLocaleString()}
                   </div>
@@ -246,7 +243,7 @@ export default function SonarDashboard() {
             </>
           ) : (
             <div className="error-card">
-              <h3>❌ Erreur</h3>
+              <h3><span className="error-icon">{Icons.error}</span> Erreur</h3>
               <p>{report.error || 'Impossible de récupérer le rapport'}</p>
             </div>
           )}
@@ -255,7 +252,7 @@ export default function SonarDashboard() {
 
       {/* Help Section */}
       <div className="help-section">
-        <h3>💡 Aide</h3>
+        <h3><span className="help-icon">{Icons.lightbulb}</span> Aide</h3>
         <div className="help-content">
           <p>
             Les analyses SonarQube sont automatiquement exécutées lors de chaque pipeline CI/CD.
