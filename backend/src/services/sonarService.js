@@ -8,7 +8,7 @@ const execAsync = promisify(exec)
 
 // SonarQube configuration
 const SONAR_URL = process.env.SONAR_URL || 'http://sonarqube:9000'
-const SONAR_EXTERNAL_URL = process.env.SONAR_EXTERNAL_URL || 'http://localhost:9001'
+const SONAR_EXTERNAL_URL = process.env.SONAR_EXTERNAL_URL || 'http://localhost:30090'
 const SONAR_TOKEN = process.env.SONAR_TOKEN || ''
 
 class SonarService {

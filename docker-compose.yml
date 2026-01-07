@@ -80,7 +80,7 @@ services:
       # SonarQube
       SONAR_URL: ${SONAR_URL:-http://sonarqube:9000}
       SONAR_TOKEN: ${SONAR_TOKEN:-}
-      SONAR_EXTERNAL_URL: ${SONAR_EXTERNAL_URL:-http://localhost:9001}
+      SONAR_EXTERNAL_URL: ${SONAR_EXTERNAL_URL:-http://localhost:30090}
       # App repo
       APP_REPO_URL: ${APP_REPO_URL:-https://github.com/Saad-Rafik-Etu-IMT/demo.git}
     volumes:

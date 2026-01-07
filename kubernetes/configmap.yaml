@@ -46,6 +46,7 @@ data:
   # For local Kubernetes (minikube/kind), use NodePort mappings
   VITE_API_URL: "http://localhost:30002"
   VITE_WS_URL: "ws://localhost:30002"
+  VITE_SONAR_URL: "http://localhost:30090"
 ---
 apiVersion: v1
 kind: ConfigMap
