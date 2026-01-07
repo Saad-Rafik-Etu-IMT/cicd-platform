@@ -81,7 +81,7 @@ VM_SSH_PRIVATE_KEY=<CONTENU_DE_LA_CLE_PRIVEE>
 SonarQube est intégré dans le docker-compose. Pour le configurer :
 
 1. **Accéder à SonarQube** : [http://localhost:9000](http://localhost:9000)
-   - Login par défaut : `admin` / `admin`
+   - Login par défaut : `admin` / `sonaradmin`
    - Changez le mot de passe à la première connexion
 
 2. **Générer un Token API** :
