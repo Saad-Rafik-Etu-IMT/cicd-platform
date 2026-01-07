@@ -1,8 +1,12 @@
 const express = require('express')
 const router = express.Router()
 const sshService = require('../services/sshService')
+const { authenticateToken, requireRole } = require('../middleware/auth')
 
-// GET VM status
+// All VM routes require authentication
+router.use(authenticateToken)
+
+// GET VM status - requires at least viewer role
 router.get('/status', async (req, res) => {
   try {
     const [connectionOk, containerStatus, isHealthy] = await Promise.all([
@@ -59,8 +63,8 @@ router.post('/test-connection', async (req, res) => {
   }
 })
 
-// POST manual rollback
-router.post('/rollback', async (req, res) => {
+// POST manual rollback - requires developer or admin role
+router.post('/rollback', requireRole('admin', 'developer'), async (req, res) => {
   try {
     const result = await sshService.rollback()
     res.json({ 
