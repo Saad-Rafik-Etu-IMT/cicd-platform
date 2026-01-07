@@ -8,7 +8,7 @@ const execAsync = promisify(exec)
 
 // SonarQube configuration
 const SONAR_URL = process.env.SONAR_URL || 'http://sonarqube:9000'
-const SONAR_EXTERNAL_URL = process.env.SONAR_EXTERNAL_URL || 'http://localhost:9000'
+const SONAR_EXTERNAL_URL = process.env.SONAR_EXTERNAL_URL || 'http://localhost:9001'
 const SONAR_TOKEN = process.env.SONAR_TOKEN || ''
 
 class SonarService {
@@ -54,16 +54,27 @@ class SonarService {
    */
   async getStatus() {
     try {
+      console.log('Attempting to connect to SonarQube at:', this.baseUrl)
       const response = await axios.get(
         `${this.baseUrl}/api/system/status`,
-        this.getAuthConfig()
+        {
+          ...this.getAuthConfig(),
+          timeout: 10000
+        }
       )
+      console.log('SonarQube status response:', response.data)
       return {
         available: true,
         status: response.data.status,
         version: response.data.version
       }
     } catch (error) {
+      console.error('Error getting SonarQube status:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.status,
+        url: this.baseUrl
+      })
       return {
         available: false,
         error: error.message
