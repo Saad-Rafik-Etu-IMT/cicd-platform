@@ -1,7 +1,12 @@
 const jwt = require('jsonwebtoken')
 const pool = require('../config/database')
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cicd-platform-secret-key-2024'
+// JWT_SECRET must be set in environment - no default for security
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  console.warn('⚠️  WARNING: JWT_SECRET not set in environment. Using fallback (NOT FOR PRODUCTION)')
+}
+const getJwtSecret = () => JWT_SECRET || 'dev-only-fallback-key-change-me'
 
 /**
  * Middleware to verify JWT token
@@ -15,7 +20,7 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET)
+    const decoded = jwt.verify(token, getJwtSecret())
     
     // Get user from database
     const result = await pool.query(
@@ -66,7 +71,7 @@ const generateToken = (user) => {
       username: user.username,
       role: user.role 
     },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '24h' }
   )
 }
@@ -100,5 +105,5 @@ module.exports = {
   ROLES,
   PERMISSIONS,
   hasPermission,
-  JWT_SECRET
+  getJwtSecret
 }

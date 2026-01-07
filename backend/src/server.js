@@ -54,6 +54,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+// Global error handler middleware
+app.use((err, req, res, next) => {
+  console.error('🔴 Unhandled error:', err.stack)
+  
+  // Don't expose internal errors in production
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal server error' 
+    : err.message
+  
+  res.status(err.status || 500).json({ 
+    error: message,
+    timestamp: new Date().toISOString()
+  })
+})
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id)
