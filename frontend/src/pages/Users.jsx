@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
+import { Icons } from '../components/Icons'
+import LoadingSpinner from '../components/LoadingSpinner'
+import ConfirmModal from '../components/ConfirmModal'
+import { useToast } from '../components/Toast'
 import './Users.css'
 
 export default function Users() {
   const { user: currentUser, isAdmin } = useAuth()
+  const { showToast } = useToast()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [updating, setUpdating] = useState(null)
+  const [roleConfirm, setRoleConfirm] = useState(null)
 
   useEffect(() => {
     fetchUsers()
@@ -29,7 +35,7 @@ export default function Users() {
 
   const updateRole = async (userId, newRole) => {
     if (userId === currentUser.id) {
-      alert('Vous ne pouvez pas modifier votre propre rôle')
+      showToast('Vous ne pouvez pas modifier votre propre rôle', 'warning')
       return
     }
 
@@ -39,8 +45,9 @@ export default function Users() {
       setUsers(users.map(u => 
         u.id === userId ? { ...u, role: newRole } : u
       ))
+      showToast('Rôle mis à jour avec succès', 'success')
     } catch (err) {
-      alert('Erreur lors de la mise à jour du rôle')
+      showToast('Erreur lors de la mise à jour du rôle', 'error')
       console.error(err)
     } finally {
       setUpdating(null)
@@ -58,10 +65,10 @@ export default function Users() {
 
   const getRoleIcon = (role) => {
     switch (role) {
-      case 'admin': return '👑'
-      case 'developer': return '💻'
-      case 'viewer': return '👁️'
-      default: return '👤'
+      case 'admin': return Icons.crown
+      case 'developer': return Icons.code
+      case 'viewer': return Icons.eye
+      default: return Icons.user
     }
   }
 
@@ -77,26 +84,21 @@ export default function Users() {
   if (!isAdmin()) {
     return (
       <div className="access-denied">
-        <h2>🔒 Accès refusé</h2>
+        <h2><span className="access-icon">{Icons.lock}</span> Accès refusé</h2>
         <p>Seuls les administrateurs peuvent accéder à cette page.</p>
       </div>
     )
   }
 
   if (loading) {
-    return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Chargement des utilisateurs...</p>
-      </div>
-    )
+    return <LoadingSpinner message="Chargement des utilisateurs..." />
   }
 
   return (
     <div className="users-page">
       <div className="page-header">
         <div>
-          <h1>👥 Gestion des utilisateurs</h1>
+          <h1><span className="header-icon">{Icons.users}</span> Gestion des utilisateurs</h1>
           <p className="subtitle">Gérez les rôles et permissions des utilisateurs</p>
         </div>
         <div className="user-count">
@@ -107,7 +109,7 @@ export default function Users() {
 
       {error && (
         <div className="error-banner">
-          <span>⚠️ {error}</span>
+          <span className="error-icon">{Icons.warning}</span> {error}
         </div>
       )}
 
@@ -115,15 +117,15 @@ export default function Users() {
         <h3>Rôles et permissions</h3>
         <div className="legend-grid">
           <div className="legend-item">
-            <span className="role-badge role-admin">👑 Admin</span>
+            <span className="role-badge role-admin"><span className="role-icon">{Icons.crown}</span> Admin</span>
             <span className="permissions">Toutes les permissions</span>
           </div>
           <div className="legend-item">
-            <span className="role-badge role-developer">💻 Developer</span>
+            <span className="role-badge role-developer"><span className="role-icon">{Icons.code}</span> Developer</span>
             <span className="permissions">Déclencher pipelines, rollback, lecture</span>
           </div>
           <div className="legend-item">
-            <span className="role-badge role-viewer">👁️ Viewer</span>
+            <span className="role-badge role-viewer"><span className="role-icon">{Icons.eye}</span> Viewer</span>
             <span className="permissions">Lecture seule</span>
           </div>
         </div>
@@ -171,12 +173,12 @@ export default function Users() {
                       disabled={updating === user.id}
                       className="role-select"
                     >
-                      <option value="admin">👑 Admin</option>
-                      <option value="developer">💻 Developer</option>
-                      <option value="viewer">👁️ Viewer</option>
+                      <option value="admin">Admin</option>
+                      <option value="developer">Developer</option>
+                      <option value="viewer">Viewer</option>
                     </select>
                   )}
-                  {updating === user.id && <span className="updating">⏳</span>}
+                  {updating === user.id && <span className="updating">{Icons.running}</span>}
                 </td>
               </tr>
             ))}
