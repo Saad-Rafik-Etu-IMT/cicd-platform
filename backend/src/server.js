@@ -7,12 +7,30 @@ const { Server } = require('socket.io')
 const app = express()
 const server = http.createServer(app)
 
+// CORS origins - support multiple frontend URLs
+const getAllowedOrigins = () => {
+  const origins = [
+    'http://localhost:3000',
+    'http://localhost:30000',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:30000'
+  ]
+  if (process.env.FRONTEND_URL) {
+    origins.push(process.env.FRONTEND_URL)
+  }
+  return origins
+}
+
 // Socket.io setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:30000',
-    methods: ['GET', 'POST']
-  }
+    origin: getAllowedOrigins(),
+    methods: ['GET', 'POST'],
+    credentials: true
+  },
+  // Improve connection stability
+  pingTimeout: 60000,
+  pingInterval: 25000
 })
 
 // Import Git Poller Service
