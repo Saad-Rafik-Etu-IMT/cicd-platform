@@ -13,7 +13,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'
  * Redirect to GitHub OAuth
  */
 router.get('/github', (req, res) => {
-  const redirectUri = `${process.env.BACKEND_URL || 'http://localhost:3001'}/api/auth/github/callback`
+  const redirectUri = `${process.env.BACKEND_URL || 'http://localhost:3002'}/api/auth/github/callback`
   const scope = 'user:email read:user'
   
   // Add random state to prevent caching issues

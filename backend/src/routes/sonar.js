@@ -119,7 +119,7 @@ router.post('/projects', requireRole('admin', 'developer'), async (req, res) => 
  */
 router.get('/config', (req, res) => {
   res.json({
-    url: process.env.SONAR_EXTERNAL_URL || 'http://localhost:9000',
+    url: process.env.SONAR_EXTERNAL_URL || 'http://localhost:9001',
     configured: !!process.env.SONAR_TOKEN
   })
 })
