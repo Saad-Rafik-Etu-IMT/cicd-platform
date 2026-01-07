@@ -12,8 +12,8 @@ metadata:
 data:
   NODE_ENV: "production"
   PORT: "3002"
-  FRONTEND_URL: "http://cicd-frontend:80"
-  BACKEND_URL: "http://cicd-backend:3002"
+  FRONTEND_URL: "http://localhost:30000"
+  BACKEND_URL: "http://localhost:30002"
   # Database
   POSTGRES_HOST: "cicd-postgres"
   POSTGRES_PORT: "5432"
