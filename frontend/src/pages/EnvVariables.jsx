@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
+import { Icons } from '../components/Icons'
+import LoadingSpinner from '../components/LoadingSpinner'
+import ConfirmModal from '../components/ConfirmModal'
 import './EnvVariables.css'
 
 export default function EnvVariables() {
@@ -15,6 +18,7 @@ export default function EnvVariables() {
   })
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   useEffect(() => {
     fetchVariables()
@@ -86,42 +90,40 @@ export default function EnvVariables() {
   }
 
   const handleDelete = async (variable) => {
-    if (!confirm(`Supprimer la variable "${variable.name}" ?`)) {
-      return
-    }
+    setDeleteConfirm(variable)
+  }
 
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    
     try {
-      await api.delete(`/env/${variable.id}`)
+      await api.delete(`/env/${deleteConfirm.id}`)
       await fetchVariables()
     } catch (err) {
-      alert('Erreur lors de la suppression')
+      setError('Erreur lors de la suppression')
     }
+    setDeleteConfirm(null)
   }
 
   if (loading) {
-    return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Chargement...</p>
-      </div>
-    )
+    return <LoadingSpinner message="Chargement des variables..." />
   }
 
   return (
     <div className="env-variables">
       <div className="page-header">
         <div>
-          <h1>🔐 Variables d'environnement</h1>
+          <h1><span className="header-icon">{Icons.lock}</span> Variables d'environnement</h1>
           <p className="subtitle">Gérez les secrets et configurations des pipelines</p>
         </div>
         <button className="btn-primary" onClick={() => openModal()}>
-          ➕ Nouvelle variable
+          <span className="btn-icon">{Icons.plus}</span> Nouvelle variable
         </button>
       </div>
 
       {variables.length === 0 ? (
         <div className="empty-state">
-          <span className="empty-icon">🔑</span>
+          <span className="empty-icon">{Icons.key}</span>
           <h3>Aucune variable configurée</h3>
           <p>Ajoutez des variables d'environnement pour vos pipelines</p>
           <button className="btn-primary" onClick={() => openModal()}>
@@ -135,7 +137,7 @@ export default function EnvVariables() {
               <div className="variable-info">
                 <div className="variable-header">
                   <code className="variable-name">{variable.name}</code>
-                  {variable.is_secret && <span className="badge secret">🔒 Secret</span>}
+                  {variable.is_secret && <span className="badge secret"><span className="badge-icon">{Icons.lock}</span> Secret</span>}
                 </div>
                 {variable.description && (
                   <p className="variable-description">{variable.description}</p>
@@ -150,14 +152,14 @@ export default function EnvVariables() {
                   onClick={() => openModal(variable)}
                   title="Modifier"
                 >
-                  ✏️
+                  {Icons.edit}
                 </button>
                 <button 
                   className="btn-icon danger" 
                   onClick={() => handleDelete(variable)}
                   title="Supprimer"
                 >
-                  🗑️
+                  {Icons.trash}
                 </button>
               </div>
             </div>
@@ -225,7 +227,7 @@ export default function EnvVariables() {
                     checked={formData.is_secret}
                     onChange={e => setFormData({ ...formData, is_secret: e.target.checked })}
                   />
-                  <span>🔒 Masquer la valeur (secret)</span>
+                  <span><span className="checkbox-icon">{Icons.lock}</span> Masquer la valeur (secret)</span>
                 </label>
               </div>
 
@@ -234,13 +236,23 @@ export default function EnvVariables() {
                   Annuler
                 </button>
                 <button type="submit" className="btn-primary" disabled={saving}>
-                  {saving ? '⏳ Enregistrement...' : (editingVar ? 'Modifier' : 'Créer')}
+                  {saving ? <><span className="btn-icon">{Icons.running}</span> Enregistrement...</> : (editingVar ? 'Modifier' : 'Créer')}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteConfirm}
+        title="Supprimer la variable"
+        message={`Êtes-vous sûr de vouloir supprimer la variable "${deleteConfirm?.name}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   )
 }
