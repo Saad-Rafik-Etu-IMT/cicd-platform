@@ -217,7 +217,7 @@ export default function PipelineDetail() {
             )}
             {pipeline.sonar_project_key && (
               <a 
-                href={`${import.meta.env.VITE_SONAR_URL || 'http://localhost:9000'}/dashboard?id=${pipeline.sonar_project_key}`}
+                href={`${import.meta.env.VITE_SONAR_URL || 'http://localhost:9001'}/dashboard?id=${pipeline.sonar_project_key}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="sonar-link"

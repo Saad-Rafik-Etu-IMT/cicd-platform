@@ -30,7 +30,7 @@ export default function Login() {
   const handleGitHubLogin = () => {
     // Clear logout state before redirecting to GitHub
     setShowLogoutMessage(false)
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002'
     window.location.href = `${backendUrl}/api/auth/github`
   }
 
