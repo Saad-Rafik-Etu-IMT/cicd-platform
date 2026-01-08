@@ -132,6 +132,8 @@ async function executeRealStep(stepName, pipeline) {
       const { stdout: cloneOut } = await execAsync(
         `git clone --branch ${pipeline.branch} --depth 1 ${pipeline.repo_url} ${workDir}`
       )
+      // Make mvnw executable
+      await execAsync(`chmod +x ${workDir}/mvnw`)
       return `Cloned ${pipeline.repo_url} (branch: ${pipeline.branch})\n${cloneOut}`
 
     case 'Run Tests':
