@@ -1,23 +1,7 @@
-# 📘 PLATEFORME CI/CD - DOCUMENTATION COMPLÈTE
-
-## Projet Cloud Sécurisé - BFB Management
+# Projet Cloud Sécurisé - BFB Management
 
 **Auteurs**: Saar Rafik, Yuzhe Zhu, Thomas Bernabé
 **Date**: Janvier 2026
-
----
-
-## 📑 TABLE DES MATIÈRES
-
-1. [Vue d&#39;ensemble](#vue-densemble)
-2. [Architecture technique](#architecture-technique)
-3. [Configuration et variables](#configuration-et-variables)
-4. [Guide de démarrage](#guide-de-démarrage)
-5. [VM de production](#vm-de-production)
-6. [Fonctionnalités](#fonctionnalités)
-7. [Guide de démonstration](#guide-de-démonstration)
-8. [Commandes utiles](#commandes-utiles)
-9. [Dépannage](#dépannage)
 
 ---
 
