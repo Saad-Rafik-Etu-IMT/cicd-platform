@@ -12,6 +12,7 @@ const execAsync = promisify(exec)
 // Mode: 'simulate' for demo, 'real' for production
 const MODE = process.env.PIPELINE_MODE || 'simulate'
 const WORKSPACE = process.env.WORKSPACE_DIR || '/tmp/pipelines'
+const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT) || 5 * 60 * 1000 // 5 minutes default
 
 const STEPS = [
   'Clone Repository',
@@ -26,6 +27,24 @@ const STEPS = [
 
 async function executePipeline(pipeline, io) {
   const pipelineRoom = `pipeline-${pipeline.id}`
+  const pipelineStartTime = Date.now()
+  let timeoutId = null
+  let isCancelled = false
+  
+  // Create a promise that rejects after timeout
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      isCancelled = true
+      reject(new Error(`Pipeline timeout: exceeded ${PIPELINE_TIMEOUT / 1000 / 60} minutes`))
+    }, PIPELINE_TIMEOUT)
+  })
+  
+  // Function to check if pipeline should continue
+  const checkTimeout = () => {
+    if (isCancelled) {
+      throw new Error(`Pipeline cancelled: exceeded ${PIPELINE_TIMEOUT / 1000 / 60} minutes`)
+    }
+  }
   
   try {
     // Update status to running
@@ -38,15 +57,24 @@ async function executePipeline(pipeline, io) {
     io.to(pipelineRoom).emit('pipeline_started', { id: pipeline.id })
     io.emit('pipeline:started', { id: pipeline.id })
     
+    console.log(`⏱️  Pipeline ${pipeline.id} started with ${PIPELINE_TIMEOUT / 1000}s timeout`)
+    
     for (const step of STEPS) {
+      checkTimeout() // Check before each step
       await executeStep(pipeline, step, io, pipelineRoom)
     }
+    
+    // Clear timeout on success
+    if (timeoutId) clearTimeout(timeoutId)
     
     // Pipeline completed successfully
     await pool.query(
       'UPDATE pipelines SET status = $1, completed_at = NOW() WHERE id = $2',
       ['success', pipeline.id]
     )
+    
+    const duration = Math.round((Date.now() - pipelineStartTime) / 1000)
+    console.log(`✅ Pipeline ${pipeline.id} completed in ${duration}s`)
     
     // Record deployment
     await pool.query(
@@ -60,18 +88,28 @@ async function executePipeline(pipeline, io) {
     io.emit('pipeline:completed', { id: pipeline.id })
     
   } catch (error) {
-    // Pipeline failed
+    // Clear timeout on error
+    if (timeoutId) clearTimeout(timeoutId)
+    
+    const duration = Math.round((Date.now() - pipelineStartTime) / 1000)
+    const isTimeout = error.message.includes('timeout') || error.message.includes('cancelled')
+    const status = isTimeout ? 'cancelled' : 'failed'
+    
+    console.log(`❌ Pipeline ${pipeline.id} ${status} after ${duration}s: ${error.message}`)
+    
+    // Pipeline failed or cancelled
     await pool.query(
       'UPDATE pipelines SET status = $1, completed_at = NOW() WHERE id = $2',
-      ['failed', pipeline.id]
+      [status, pipeline.id]
     )
     
     // Emit to room and broadcast globally for notifications
     io.to(pipelineRoom).emit('pipeline_failed', { 
       id: pipeline.id, 
-      error: error.message 
+      error: error.message,
+      status: status
     })
-    io.emit('pipeline:failed', { id: pipeline.id, error: error.message })
+    io.emit('pipeline:failed', { id: pipeline.id, error: error.message, status: status })
     
     throw error
   }
