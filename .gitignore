@@ -1,9 +1,15 @@
 # Dependencies
 node_modules/
 
-# Environment
+# Environment - Sensitive configuration files
 .env
 *.env.local
+
+# SSH Keys - Never commit private keys!
+ssh/vm_deployer
+ssh/vm_deployer.pub
+ssh/*.pem
+ssh/id_*
 
 # Build outputs
 dist/

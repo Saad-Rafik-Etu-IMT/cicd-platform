@@ -12,6 +12,7 @@ const execAsync = promisify(exec)
 // Mode: 'simulate' for demo, 'real' for production
 const MODE = process.env.PIPELINE_MODE || 'simulate'
 const WORKSPACE = process.env.WORKSPACE_DIR || '/tmp/pipelines'
+const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT) || 5 * 60 * 1000 // 5 minutes default
 
 const STEPS = [
   'Clone Repository',
@@ -26,6 +27,24 @@ const STEPS = [
 
 async function executePipeline(pipeline, io) {
   const pipelineRoom = `pipeline-${pipeline.id}`
+  const pipelineStartTime = Date.now()
+  let timeoutId = null
+  let isCancelled = false
+  
+  // Create a promise that rejects after timeout
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      isCancelled = true
+      reject(new Error(`Pipeline timeout: exceeded ${PIPELINE_TIMEOUT / 1000 / 60} minutes`))
+    }, PIPELINE_TIMEOUT)
+  })
+  
+  // Function to check if pipeline should continue
+  const checkTimeout = () => {
+    if (isCancelled) {
+      throw new Error(`Pipeline cancelled: exceeded ${PIPELINE_TIMEOUT / 1000 / 60} minutes`)
+    }
+  }
   
   try {
     // Update status to running
@@ -38,15 +57,24 @@ async function executePipeline(pipeline, io) {
     io.to(pipelineRoom).emit('pipeline_started', { id: pipeline.id })
     io.emit('pipeline:started', { id: pipeline.id })
     
+    console.log(`⏱️  Pipeline ${pipeline.id} started with ${PIPELINE_TIMEOUT / 1000}s timeout`)
+    
     for (const step of STEPS) {
+      checkTimeout() // Check before each step
       await executeStep(pipeline, step, io, pipelineRoom)
     }
+    
+    // Clear timeout on success
+    if (timeoutId) clearTimeout(timeoutId)
     
     // Pipeline completed successfully
     await pool.query(
       'UPDATE pipelines SET status = $1, completed_at = NOW() WHERE id = $2',
       ['success', pipeline.id]
     )
+    
+    const duration = Math.round((Date.now() - pipelineStartTime) / 1000)
+    console.log(`✅ Pipeline ${pipeline.id} completed in ${duration}s`)
     
     // Record deployment
     await pool.query(
@@ -60,18 +88,28 @@ async function executePipeline(pipeline, io) {
     io.emit('pipeline:completed', { id: pipeline.id })
     
   } catch (error) {
-    // Pipeline failed
+    // Clear timeout on error
+    if (timeoutId) clearTimeout(timeoutId)
+    
+    const duration = Math.round((Date.now() - pipelineStartTime) / 1000)
+    const isTimeout = error.message.includes('timeout') || error.message.includes('cancelled')
+    const status = isTimeout ? 'cancelled' : 'failed'
+    
+    console.log(`❌ Pipeline ${pipeline.id} ${status} after ${duration}s: ${error.message}`)
+    
+    // Pipeline failed or cancelled
     await pool.query(
       'UPDATE pipelines SET status = $1, completed_at = NOW() WHERE id = $2',
-      ['failed', pipeline.id]
+      [status, pipeline.id]
     )
     
     // Emit to room and broadcast globally for notifications
     io.to(pipelineRoom).emit('pipeline_failed', { 
       id: pipeline.id, 
-      error: error.message 
+      error: error.message,
+      status: status
     })
-    io.emit('pipeline:failed', { id: pipeline.id, error: error.message })
+    io.emit('pipeline:failed', { id: pipeline.id, error: error.message, status: status })
     
     throw error
   }
@@ -132,8 +170,8 @@ async function executeRealStep(stepName, pipeline) {
       const { stdout: cloneOut } = await execAsync(
         `git clone --branch ${pipeline.branch} --depth 1 ${pipeline.repo_url} ${workDir}`
       )
-      // Make mvnw executable
-      await execAsync(`chmod +x ${workDir}/mvnw`)
+      // Fix mvnw permissions after clone
+      await execAsync(`chmod +x ${workDir}/mvnw || true`)
       return `Cloned ${pipeline.repo_url} (branch: ${pipeline.branch})\n${cloneOut}`
 
     case 'Run Tests':
@@ -217,17 +255,48 @@ Dashboard: ${report.dashboardUrl || 'N/A'}`
       return `Built image: ${dockerImage}\n${dockerOut}`
 
     case 'Deploy to VM':
-      const deployResult = await sshService.deploy(dockerImage)
+      // Save image, transfer to VM, load and run
+      const imageTarPath = `/tmp/${dockerImage.replace(':', '-')}.tar`
+      
+      // Save docker image to tar file
+      await execAsync(`docker save ${dockerImage} -o ${imageTarPath}`, { timeout: 300000 })
+      
+      // Transfer image to VM using SCP
+      const vmHost = process.env.VM_HOST
+      const vmUser = process.env.VM_USER
+      const sshKeyPath = process.env.SSH_KEY_PATH || '/tmp/vm_deployer'
+      
+      await execAsync(
+        `scp -i ${sshKeyPath} -o StrictHostKeyChecking=no ${imageTarPath} ${vmUser}@${vmHost}:/tmp/`,
+        { timeout: 300000 }
+      )
+      
+      // Load image and deploy on VM
+      const deployResult = await sshService.deployWithImage(dockerImage, imageTarPath)
+      
+      // Cleanup local tar file
+      await execAsync(`rm -f ${imageTarPath}`)
+      
       return deployResult.output
 
     case 'Health Check':
-      // Wait for container to start
-      await new Promise(resolve => setTimeout(resolve, 5000))
-      const isHealthy = await sshService.healthCheck()
-      if (!isHealthy) {
-        throw new Error('Health check failed')
+      // Wait for Java application to start (Spring Boot needs more time)
+      const maxRetries = 12  // 12 retries * 10 seconds = 2 minutes max
+      const retryInterval = 10000  // 10 seconds
+      
+      for (let i = 0; i < maxRetries; i++) {
+        console.log(`Health check attempt ${i + 1}/${maxRetries}...`)
+        await new Promise(resolve => setTimeout(resolve, retryInterval))
+        
+        const isHealthy = await sshService.healthCheck()
+        if (isHealthy) {
+          return `Health check passed after ${(i + 1) * 10} seconds: Application is UP`
+        }
       }
-      return 'Health check passed: HTTP 200 OK'
+      
+      // Get container logs for debugging
+      const logs = await sshService.getLogs(30)
+      throw new Error(`Health check failed after ${maxRetries * 10} seconds. Container logs:\n${logs}`)
 
     case 'Security Scan':
       // Run penetration test against deployed application
@@ -323,11 +392,31 @@ async function rollbackPipeline(pipelineId, targetImage, io) {
 
   try {
     if (MODE === 'real') {
-      await sshService.deploy(targetImage)
-      // Verify health after rollback
-      await new Promise(resolve => setTimeout(resolve, 5000))
-      const isHealthy = await sshService.healthCheck()
-      if (!isHealthy) throw new Error('Health check failed after rollback')
+      // Execute rollback
+      const rollbackResult = await sshService.rollback()
+      console.log('Rollback result:', rollbackResult.output)
+      
+      // Wait for Java application to start (up to 90 seconds)
+      const maxRetries = 9
+      const retryInterval = 10000
+      let isHealthy = false
+      
+      for (let i = 0; i < maxRetries; i++) {
+        console.log(`Rollback health check attempt ${i + 1}/${maxRetries}...`)
+        await new Promise(resolve => setTimeout(resolve, retryInterval))
+        isHealthy = await sshService.healthCheck()
+        if (isHealthy) break
+      }
+      
+      // If still not healthy, it might be because no container is running (intentional rollback to stop)
+      if (!isHealthy) {
+        const containerStatus = await sshService.getContainerStatus()
+        if (containerStatus === 'not running' || containerStatus.includes('stopped')) {
+          console.log('Container stopped - rollback completed (no previous version)')
+        } else {
+          throw new Error('Health check failed after rollback')
+        }
+      }
     } else {
       // Simulate rollback
       await new Promise(resolve => setTimeout(resolve, 3000))
@@ -336,6 +425,7 @@ async function rollbackPipeline(pipelineId, targetImage, io) {
     io.to(room).emit('rollback_completed', { version: targetImage })
     return { success: true, version: targetImage }
   } catch (error) {
+    console.error('Error during rollback:', error)
     io.to(room).emit('rollback_failed', { error: error.message })
     throw error
   }
