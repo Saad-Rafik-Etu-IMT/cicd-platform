@@ -117,9 +117,23 @@ class SSHService {
 
   /**
    * Rollback to the previous version
+   * Stops current container and restarts with previous image if available
    */
   async rollback() {
-    const command = '/opt/bfb-management/rollback.sh'
+    // Simplified rollback: stop current, find previous image, restart
+    const command = `
+      docker stop bfb-app 2>/dev/null || true && \
+      docker rm bfb-app 2>/dev/null || true && \
+      PREV_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "bfb-management" | head -1) && \
+      if [ -n "$PREV_IMAGE" ]; then \
+        echo "Restarting with: $PREV_IMAGE" && \
+        docker run -d --name bfb-app -p 8080:8080 --restart unless-stopped $PREV_IMAGE && \
+        docker ps --filter name=bfb-app; \
+      else \
+        echo "No image found, container stopped"; \
+      fi
+    `.replace(/\n\s+/g, ' ').trim()
+    
     return this.executeCommand(command)
   }
 

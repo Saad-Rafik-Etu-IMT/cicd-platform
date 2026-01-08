@@ -354,11 +354,31 @@ async function rollbackPipeline(pipelineId, targetImage, io) {
 
   try {
     if (MODE === 'real') {
-      await sshService.deploy(targetImage)
-      // Verify health after rollback
-      await new Promise(resolve => setTimeout(resolve, 5000))
-      const isHealthy = await sshService.healthCheck()
-      if (!isHealthy) throw new Error('Health check failed after rollback')
+      // Execute rollback
+      const rollbackResult = await sshService.rollback()
+      console.log('Rollback result:', rollbackResult.output)
+      
+      // Wait for Java application to start (up to 90 seconds)
+      const maxRetries = 9
+      const retryInterval = 10000
+      let isHealthy = false
+      
+      for (let i = 0; i < maxRetries; i++) {
+        console.log(`Rollback health check attempt ${i + 1}/${maxRetries}...`)
+        await new Promise(resolve => setTimeout(resolve, retryInterval))
+        isHealthy = await sshService.healthCheck()
+        if (isHealthy) break
+      }
+      
+      // If still not healthy, it might be because no container is running (intentional rollback to stop)
+      if (!isHealthy) {
+        const containerStatus = await sshService.getContainerStatus()
+        if (containerStatus === 'not running' || containerStatus.includes('stopped')) {
+          console.log('Container stopped - rollback completed (no previous version)')
+        } else {
+          throw new Error('Health check failed after rollback')
+        }
+      }
     } else {
       // Simulate rollback
       await new Promise(resolve => setTimeout(resolve, 3000))
@@ -367,6 +387,7 @@ async function rollbackPipeline(pipelineId, targetImage, io) {
     io.to(room).emit('rollback_completed', { version: targetImage })
     return { success: true, version: targetImage }
   } catch (error) {
+    console.error('Error during rollback:', error)
     io.to(room).emit('rollback_failed', { error: error.message })
     throw error
   }

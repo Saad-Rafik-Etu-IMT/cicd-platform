@@ -1,9 +1,15 @@
 # Dependencies
 node_modules/
 
-# Environment
+# Environment - 敏感配置文件
 .env
 *.env.local
+
+# SSH Keys - 私钥绝对不能提交！
+ssh/vm_deployer
+ssh/vm_deployer.pub
+ssh/*.pem
+ssh/id_*
 
 # Build outputs
 dist/
