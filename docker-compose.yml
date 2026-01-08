@@ -65,7 +65,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       # Pipeline mode
-      PIPELINE_MODE: simulate
+      PIPELINE_MODE: ${PIPELINE_MODE:-real}
       # GitHub OAuth (à configurer)
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
@@ -83,6 +83,10 @@ services:
       SONAR_EXTERNAL_URL: ${SONAR_EXTERNAL_URL:-http://localhost:30090}
       # App repo
       APP_REPO_URL: ${APP_REPO_URL:-https://github.com/Saad-Rafik-Etu-IMT/demo.git}
+      # Git Polling
+      GIT_POLLING_ENABLED: ${GIT_POLLING_ENABLED:-false}
+      GIT_POLLING_INTERVAL: ${GIT_POLLING_INTERVAL:-300000}
+      GIT_POLLING_BRANCH: ${GIT_POLLING_BRANCH:-master}
     volumes:
       - ./ssh:/app/ssh:ro
       - /var/run/docker.sock:/var/run/docker.sock
