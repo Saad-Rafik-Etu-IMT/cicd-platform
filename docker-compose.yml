@@ -64,7 +64,7 @@ services:
       # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      # Pipeline mode - real 模式连接真实VM部署
+      # Pipeline mode - 'real' connects to actual VM for deployment
       PIPELINE_MODE: ${PIPELINE_MODE:-real}
       # GitHub OAuth (à configurer)
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
@@ -95,7 +95,7 @@ services:
     volumes:
       - ./ssh:/app/ssh-source:ro
       - /var/run/docker.sock:/var/run/docker.sock
-    # 修复 SSH 密钥权限问题
+    # Fix SSH key permission issues
     command: >
       sh -c "cp /app/ssh-source/vm_deployer /tmp/vm_deployer &&
              chmod 600 /tmp/vm_deployer &&

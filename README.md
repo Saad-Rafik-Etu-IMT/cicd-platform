@@ -1,175 +1,175 @@
-# 🚀 CI/CD Platform - 快速启动指南
+# 🚀 CI/CD Platform - Quick Start Guide
 
-## 📋 前置要求
+## 📋 Prerequisites
 
-- Docker Desktop (已安装并运行)
+- Docker Desktop (installed and running)
 - Git
-- 对 VM 的 SSH 访问权限
+- SSH access to VM
 
-## 🔧 快速启动
+## 🔧 Quick Start
 
-### 1. 克隆项目
+### 1. Clone Repository
 ```bash
 git clone https://github.com/Saad-Rafik-Etu-IMT/cicd-platform.git
 cd cicd-platform
 ```
 
-### 2. 配置环境变量
+### 2. Configure Environment Variables
 ```bash
-# 复制示例配置
+# Copy example configuration
 cp .env.example .env
 
-# 编辑 .env 文件，填写以下配置：
-# - GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET (从 GitHub OAuth App 获取)
-# - JWT_SECRET (生成随机字符串)
-# - VM_HOST / VM_USER (你的虚拟机配置)
-# - SONAR_TOKEN (首次启动后从 SonarQube 获取)
+# Edit .env file and fill in:
+# - GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET (from GitHub OAuth App)
+# - JWT_SECRET (generate random string)
+# - VM_HOST / VM_USER (your VM configuration)
+# - SONAR_TOKEN (get from SonarQube after first startup)
 ```
 
-### 3. 配置 SSH 密钥
+### 3. Configure SSH Keys
 ```bash
-# 创建 ssh 目录
+# Create ssh directory
 mkdir -p ssh
 
-# 生成新的 SSH 密钥对
+# Generate new SSH key pair
 ssh-keygen -t ed25519 -f ssh/vm_deployer -N ""
 
-# 将公钥复制到 VM
+# Copy public key to VM
 ssh-copy-id -i ssh/vm_deployer.pub yuzhe@192.168.59.130
 ```
 
-### 4. 启动服务
+### 4. Start Services
 ```bash
 docker compose up -d --build
 ```
 
-### 5. 配置 SonarQube Token
+### 5. Configure SonarQube Token
 ```bash
-# 等待 SonarQube 启动 (约2分钟)
-# 访问 http://localhost:9001
-# 登录: admin / admin (首次登录需改密码)
+# Wait for SonarQube to start (about 2 minutes)
+# Visit http://localhost:9001
+# Login: admin / admin (change password on first login)
 
-# 生成 Token:
-curl -X POST -u admin:新密码 "http://localhost:9001/api/user_tokens/generate?name=cicd-token"
+# Generate Token:
+curl -X POST -u admin:newpassword "http://localhost:9001/api/user_tokens/generate?name=cicd-token"
 
-# 将返回的 token 添加到 .env 文件的 SONAR_TOKEN
+# Add the returned token to SONAR_TOKEN in .env file
 ```
 
-### 6. 重启后端
+### 6. Restart Backend
 ```bash
 docker compose restart backend
 ```
 
-### 7. 启动 Git Polling
+### 7. Start Git Polling
 ```powershell
 # PowerShell
 Invoke-RestMethod -Uri "http://localhost:3002/api/poller/start" -Method POST
 
-# 或 Bash
+# Or Bash
 curl -X POST http://localhost:3002/api/poller/start
 ```
 
-## 🌐 访问地址
+## 🌐 Access URLs
 
-| 服务 | URL |
-|------|-----|
-| 前端 Dashboard | http://localhost:3000 |
-| 后端 API | http://localhost:3002 |
+| Service | URL |
+|---------|-----|
+| Frontend Dashboard | http://localhost:3000 |
+| Backend API | http://localhost:3002 |
 | SonarQube | http://localhost:9001 |
 | OWASP ZAP | http://localhost:8090 |
 
-## 🔐 GitHub OAuth 配置
+## 🔐 GitHub OAuth Configuration
 
-1. 访问 https://github.com/settings/developers
-2. 创建新的 OAuth App
-3. 配置：
+1. Visit https://github.com/settings/developers
+2. Create new OAuth App
+3. Configure:
    - Application name: `CI/CD Platform`
    - Homepage URL: `http://localhost:3000`
    - Authorization callback URL: `http://localhost:3002/api/auth/github/callback`
-4. 将 Client ID 和 Client Secret 填入 `.env`
+4. Add Client ID and Client Secret to `.env`
 
-## 🖥️ VM 要求
+## 🖥️ VM Requirements
 
-VM 需要安装：
+VM needs to have installed:
 - Docker
-- Docker Compose (可选)
+- Docker Compose (optional)
 
 ```bash
-# 在 VM 上安装 Docker
+# Install Docker on VM
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 ```
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
 cicd-platform/
-├── .env.example      # 环境变量示例
-├── .env              # 你的配置 (不要提交!)
+├── .env.example      # Environment variables example
+├── .env              # Your config (don't commit!)
 ├── docker-compose.yml
 ├── backend/          # Node.js API
 ├── frontend/         # React Dashboard
-├── ssh/              # SSH 密钥 (不要提交!)
-│   ├── vm_deployer   # 私钥
+├── ssh/              # SSH keys (don't commit!)
+│   ├── vm_deployer   # Private key
 │   └── vm_deployer.pub
-└── kubernetes/       # K8s 配置 (bonus)
+└── kubernetes/       # K8s config (bonus)
 ```
 
-## ⚠️ 安全注意事项
+## ⚠️ Security Notes
 
-**以下文件包含敏感信息，绝对不要提交到 Git：**
-- `.env` - 包含密码、密钥、Token
-- `ssh/vm_deployer` - SSH 私钥
-- `ssh/vm_deployer.pub` - SSH 公钥
+**The following files contain sensitive information, never commit to Git:**
+- `.env` - Contains passwords, keys, tokens
+- `ssh/vm_deployer` - SSH private key
+- `ssh/vm_deployer.pub` - SSH public key
 
 ## 🔄 Git Polling vs Webhook
 
-| 方式 | 优点 | 缺点 |
-|------|------|------|
-| Git Polling | 无需公网访问 | 有延迟 (默认5秒) |
-| Webhook | 实时触发 | 需要 ngrok 暴露本地服务 |
+| Method | Pros | Cons |
+|--------|------|------|
+| Git Polling | No public network access needed | Has delay (default 5s) |
+| Webhook | Real-time trigger | Requires ngrok to expose local service |
 
-## 🛠️ 常用命令
+## 🛠️ Common Commands
 
 ```bash
-# 查看服务状态
+# View service status
 docker compose ps
 
-# 查看后端日志
+# View backend logs
 docker compose logs -f backend
 
-# 重启所有服务
+# Restart all services
 docker compose restart
 
-# 停止所有服务
+# Stop all services
 docker compose down
 
-# 完全清理 (包括数据)
+# Full cleanup (including data)
 docker compose down -v
 ```
 
-## 📞 问题排查
+## 📞 Troubleshooting
 
-### SSH 连接失败
+### SSH Connection Failed
 ```bash
-# 测试 SSH 连接
+# Test SSH connection
 ssh -i ssh/vm_deployer yuzhe@192.168.59.130
 
-# 检查密钥权限
+# Check key permissions
 chmod 600 ssh/vm_deployer
 ```
 
-### SonarQube 无法启动
+### SonarQube Won't Start
 ```bash
-# 检查日志
+# Check logs
 docker compose logs sonarqube
 
-# 可能需要增加 vm.max_map_count (Linux)
+# May need to increase vm.max_map_count (Linux)
 sudo sysctl -w vm.max_map_count=262144
 ```
 
-### Pipeline 失败
+### Pipeline Failed
 ```bash
-# 查看详细日志
+# View detailed logs
 docker compose logs -f backend
 ```
