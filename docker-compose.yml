@@ -69,6 +69,8 @@ services:
       # GitHub OAuth (à configurer)
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      # GitHub Personal Access Token (for API rate limiting)
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       # JWT Secret
       JWT_SECRET: ${JWT_SECRET:-cicd-platform-jwt-secret-2024}
       # GitHub Webhook
@@ -80,18 +82,20 @@ services:
       # SonarQube
       SONAR_URL: ${SONAR_URL:-http://sonarqube:9000}
       SONAR_TOKEN: ${SONAR_TOKEN:-}
-      SONAR_EXTERNAL_URL: ${SONAR_EXTERNAL_URL:-http://localhost:30090}
+      SONAR_EXTERNAL_URL: ${SONAR_EXTERNAL_URL:-http://localhost:9001}
       # App repo
       APP_REPO_URL: ${APP_REPO_URL:-https://github.com/Saad-Rafik-Etu-IMT/demo.git}
       # OWASP ZAP
-      ZAP_API_URL: http://zap:8080
-      ZAP_API_KEY: 
-      PENTEST_TARGET_URL: http://host.docker.internal:8080
+      ZAP_API_URL: ${ZAP_API_URL:-http://zap:8080}
+      ZAP_API_KEY: ${ZAP_API_KEY:-}
+      PENTEST_TARGET_URL: ${PENTEST_TARGET_URL:-http://host.docker.internal:8080}
       # Git Polling
       GIT_POLLING_ENABLED: ${GIT_POLLING_ENABLED:-false}
-      GIT_POLLING_INTERVAL: ${GIT_POLLING_INTERVAL:-5000}
-      GIT_POLL_INTERVAL: ${GIT_POLL_INTERVAL:-5000}
-      GIT_POLLING_BRANCH: ${GIT_POLLING_BRANCH:-master}
+      GIT_POLL_INTERVAL: ${GIT_POLL_INTERVAL:-60000}
+      GIT_POLL_BRANCHES: ${GIT_POLL_BRANCHES:-master}
+      # Pipeline settings
+      WORKSPACE_DIR: ${WORKSPACE_DIR:-/tmp/pipelines}
+      PIPELINE_TIMEOUT: ${PIPELINE_TIMEOUT:-300000}
     volumes:
       - ./ssh:/app/ssh-source:ro
       - /var/run/docker.sock:/var/run/docker.sock

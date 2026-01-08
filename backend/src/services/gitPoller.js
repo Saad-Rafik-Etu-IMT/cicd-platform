@@ -110,14 +110,22 @@ class GitPollerService {
   async checkBranch(repo, branch) {
     const key = `${repo.owner}/${repo.repo}@${branch}`
     
+    // Préparer les headers avec token si disponible
+    const headers = {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'CICD-Platform-Poller'
+    }
+    
+    // Ajouter le token GitHub si configuré (pour éviter rate limit)
+    if (process.env.GITHUB_TOKEN) {
+      headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`
+    }
+    
     // Récupérer le dernier commit via l'API GitHub
     const response = await axios.get(
       `https://api.github.com/repos/${repo.owner}/${repo.repo}/commits/${branch}`,
       {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'CICD-Platform-Poller'
-        },
+        headers,
         timeout: 10000
       }
     )
