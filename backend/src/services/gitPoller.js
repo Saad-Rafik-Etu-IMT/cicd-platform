@@ -167,6 +167,18 @@ class GitPollerService {
       const commitMessage = commit.commit.message
       const author = commit.commit.author.name
 
+      // Check if a deployment is already in progress
+      const { isDeploymentLocked, getDeploymentLockStatus } = require('./pipelineExecutor')
+      
+      if (isDeploymentLocked()) {
+        const lockStatus = getDeploymentLockStatus()
+        console.log(
+          `⏸️  Skipping auto-deploy: ${lockStatus.operation} in progress ` +
+          `(Pipeline #${lockStatus.pipelineId}, running for ${lockStatus.elapsedSeconds}s)`
+        )
+        return
+      }
+
       console.log(`🔧 Triggering pipeline for ${repo.owner}/${repo.repo}@${branch}`)
 
       // Créer le pipeline en BDD

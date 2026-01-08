@@ -4,6 +4,17 @@ const cors = require('cors')
 const http = require('http')
 const { Server } = require('socket.io')
 
+// Global error handlers to prevent crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️  Unhandled Rejection at:', promise, 'reason:', reason)
+  // Don't exit process - log and continue
+})
+
+process.on('uncaughtException', (error) => {
+  console.error('⚠️  Uncaught Exception:', error)
+  // Don't exit process - log and continue
+})
+
 const app = express()
 const server = http.createServer(app)
 
@@ -61,6 +72,7 @@ const authRouter = require('./routes/auth')
 const sonarRouter = require('./routes/sonar')
 const pentestRouter = require('./routes/pentest')
 const pollerRouter = require('./routes/poller')
+const deploymentsRouter = require('./routes/deployments')
 
 // Auth routes (no authentication required for OAuth flow)
 app.use('/api/auth', authRouter)
@@ -73,6 +85,7 @@ app.use('/api/env', envVariablesRouter)
 app.use('/api/sonar', sonarRouter)
 app.use('/api/pentest', pentestRouter)
 app.use('/api/poller', pollerRouter)
+app.use('/api/deployments', deploymentsRouter)
 
 // Health check
 app.get('/health', (req, res) => {

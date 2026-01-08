@@ -310,6 +310,14 @@
   color: var(--text-muted);
 }
 
+.status-cell.status-cancelled svg {
+  color: var(--warning);
+}
+
+.status-cell.status-rolled_back svg {
+  color: #9b59b6;
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -325,4 +333,79 @@
 .error-icon svg {
   width: 16px;
   height: 16px;
+}
+
+/* Action Buttons in Table */
+.actions-cell {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-icon:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.btn-icon.btn-view {
+  text-decoration: none;
+}
+
+.btn-icon.btn-view:hover {
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.btn-icon.btn-cancel {
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--warning);
+}
+
+.btn-icon.btn-cancel:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--warning);
+}
+
+.btn-icon.btn-rollback {
+  border-color: rgba(155, 89, 182, 0.3);
+  color: #9b59b6;
+}
+
+.btn-icon.btn-rollback:hover {
+  background: rgba(155, 89, 182, 0.15);
+  border-color: #9b59b6;
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon:disabled:hover {
+  background: var(--bg-elevated);
 }

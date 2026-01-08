@@ -30,6 +30,7 @@ class SSHService {
   async executeCommand(command) {
     return new Promise((resolve, reject) => {
       const conn = new Client()
+      let settled = false
 
       conn.on('ready', () => {
         console.log(`SSH connected to ${this.config.host}`)
@@ -37,7 +38,11 @@ class SSHService {
         conn.exec(command, (err, stream) => {
           if (err) {
             conn.end()
-            return reject(err)
+            if (!settled) {
+              settled = true
+              return reject(err)
+            }
+            return
           }
 
           let stdout = ''
@@ -45,10 +50,13 @@ class SSHService {
 
           stream.on('close', (code) => {
             conn.end()
-            if (code === 0) {
-              resolve({ success: true, output: stdout, code })
-            } else {
-              reject(new Error(`Command failed with code ${code}: ${stderr}`))
+            if (!settled) {
+              settled = true
+              if (code === 0) {
+                resolve({ success: true, output: stdout, code })
+              } else {
+                reject(new Error(`Command failed with code ${code}: ${stderr}`))
+              }
             }
           })
 
@@ -63,7 +71,13 @@ class SSHService {
       })
 
       conn.on('error', (err) => {
-        reject(new Error(`SSH connection failed: ${err.message}`))
+        if (!settled) {
+          settled = true
+          reject(new Error(`SSH connection failed: ${err.message}`))
+        } else {
+          // Log error after promise is settled to avoid unhandled rejection
+          console.error(`SSH error after connection: ${err.message}`)
+        }
       })
 
       conn.connect(this.config)
@@ -117,21 +131,40 @@ class SSHService {
 
   /**
    * Rollback to the previous version
-   * Stops current container and restarts with previous image if available
+   * Stops current container and restarts with specified image
+   * @param {string} targetImage - Docker image to rollback to (from database)
    */
-  async rollback() {
-    // Simplified rollback: stop current, find previous image, restart
+  async rollback(targetImage) {
+    if (!targetImage) {
+      throw new Error('Target image is required for rollback')
+    }
+    
+    // Validate image format to prevent command injection
+    // Expected format: repo:tag or repo@sha256:hash
+    const imagePattern = /^[a-zA-Z0-9_.-]+:[a-zA-Z0-9_.-]+$/
+    if (!imagePattern.test(targetImage)) {
+      throw new Error(`Invalid image format: ${targetImage}. Expected format: repository:tag`)
+    }
+    
+    // Verify image exists on VM before rollback
+    const verifyCommand = `docker images --format "{{.Repository}}:{{.Tag}}" | grep -Fx "${targetImage.replace(/["\\$`]/g, '\\$&')}" || echo "NOT_FOUND"`
+    const verifyResult = await this.executeCommand(verifyCommand)
+    
+    if (verifyResult.output.includes('NOT_FOUND')) {
+      throw new Error(`Image ${targetImage} not found on VM. Cannot rollback.`)
+    }
+    
+    // Stop current container and start with target image from database
+    // Using escaped image name to prevent injection
+    const escapedImage = targetImage.replace(/["\\$`]/g, '\\$&')
     const command = `
       docker stop bfb-app 2>/dev/null || true && \
-      docker rm bfb-app 2>/dev/null || true && \
-      PREV_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "bfb-management" | head -1) && \
-      if [ -n "$PREV_IMAGE" ]; then \
-        echo "Restarting with: $PREV_IMAGE" && \
-        docker run -d --name bfb-app -p 8080:8080 --restart unless-stopped $PREV_IMAGE && \
-        docker ps --filter name=bfb-app; \
-      else \
-        echo "No image found, container stopped"; \
-      fi
+      docker rm -f bfb-app 2>/dev/null || true && \
+      sleep 3 && \
+      docker ps -a | grep bfb-app && exit 1 || true && \
+      echo "Rolling back to: ${escapedImage}" && \
+      docker run -d --name bfb-app -p 8080:8080 --restart unless-stopped "${escapedImage}" && \
+      docker ps --filter name=bfb-app
     `.replace(/\n\s+/g, ' ').trim()
     
     return this.executeCommand(command)

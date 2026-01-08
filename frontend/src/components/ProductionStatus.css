@@ -1,0 +1,258 @@
+/* ========================================
+   Production Status Component
+   ======================================== */
+
+.production-status {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.production-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.production-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.production-indicators {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: var(--bg-muted);
+}
+
+.indicator.connected,
+.indicator.healthy {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.indicator.disconnected,
+.indicator.unhealthy {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.indicator svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Loading State */
+.production-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Error State */
+.production-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+}
+
+/* Deployment Content */
+.production-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.deployment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.deployment-main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.deployment-main > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.deployment-main .label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.version-details {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.commit-hash {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--bg-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.rollback-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.15);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.rollback-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+.pipeline-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.pipeline-link:hover {
+  text-decoration: underline;
+}
+
+.deployment-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-muted);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.deployment-message svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  color: var(--text-muted);
+}
+
+.message-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Actions */
+.production-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Empty State */
+.production-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.production-empty .icon-muted {
+  color: var(--text-muted);
+  opacity: 0.3;
+  margin-bottom: 0.5rem;
+}
+
+.production-empty .icon-muted svg {
+  width: 32px;
+  height: 32px;
+}
+
+.production-empty p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.production-empty .subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* VM Info */
+.vm-info {
+  display: flex;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.vm-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.vm-detail svg {
+  width: 12px;
+  height: 12px;
+}

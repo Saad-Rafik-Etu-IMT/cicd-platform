@@ -30,6 +30,7 @@ export default function PipelineDetail() {
   const socketRef = useRef(null)
 
   const canRollback = hasPermission('rollback')
+  const canCancel = hasPermission('trigger') // Same permission as trigger
 
   useEffect(() => {
     fetchPipeline()
@@ -129,6 +130,11 @@ export default function PipelineDetail() {
     socketRef.current.on('rollback_completed', (data) => {
       addLog(`Rollback vers ${data.version} terminé`, 'success')
     })
+
+    socketRef.current.on('pipeline_cancelled', () => {
+      addLog('Pipeline annulé', 'warning')
+      setPipeline(prev => ({ ...prev, status: 'cancelled' }))
+    })
   }
 
   const addLog = (message, type = 'info', stepName = null) => {
@@ -144,6 +150,18 @@ export default function PipelineDetail() {
       addLog('Rollback déclenché', 'warning')
     } catch (err) {
       addLog('Erreur lors du rollback', 'error')
+    }
+  }
+
+  const cancelPipeline = async () => {
+    if (!confirm('Voulez-vous vraiment annuler ce pipeline ?')) return
+    
+    try {
+      await api.post(`/pipelines/${id}/cancel`)
+      addLog('Pipeline annulé', 'warning')
+      setPipeline(prev => ({ ...prev, status: 'cancelled' }))
+    } catch (err) {
+      addLog('Erreur lors de l\'annulation: ' + (err.response?.data?.error || err.message), 'error')
     }
   }
 
@@ -232,6 +250,12 @@ export default function PipelineDetail() {
             <span className="status-dot">{connected ? Icons.connected : Icons.disconnected}</span>
             {connected ? 'Temps réel' : 'Déconnecté'}
           </span>
+          {(pipeline.status === 'running' || pipeline.status === 'pending') && canCancel && (
+            <button className="btn-warning" onClick={cancelPipeline}>
+              <span className="icon-inline">⏹️</span>
+              Annuler
+            </button>
+          )}
           {pipeline.status === 'success' && canRollback && (
             <button className="btn-danger" onClick={triggerRollback}>
               <span className="icon-inline">{Icons.rollback}</span>

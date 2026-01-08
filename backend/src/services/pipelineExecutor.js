@@ -12,7 +12,7 @@ const execAsync = promisify(exec)
 // Mode: 'simulate' for demo, 'real' for production
 const MODE = process.env.PIPELINE_MODE || 'simulate'
 const WORKSPACE = process.env.WORKSPACE_DIR || '/tmp/pipelines'
-const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT) || 5 * 60 * 1000 // 5 minutes default
+const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT) || 15 * 60 * 1000 // 15 minutes default
 
 const STEPS = [
   'Clone Repository',
@@ -25,11 +25,112 @@ const STEPS = [
   'Security Scan'
 ]
 
+// Track running pipelines for cancellation
+const runningPipelines = new Map()
+
+// Track running rollbacks to prevent concurrent rollbacks
+const runningRollbacks = new Set()
+
+// Global deployment lock to prevent any concurrent deployments/rollbacks
+const deploymentLock = {
+  locked: false,
+  currentOperation: null, // 'pipeline' or 'rollback'
+  pipelineId: null,
+  startedAt: null
+}
+
+function acquireDeploymentLock(operation, pipelineId) {
+  if (deploymentLock.locked) {
+    const elapsed = Math.floor((Date.now() - deploymentLock.startedAt) / 1000)
+    throw new Error(
+      `Une opération ${deploymentLock.currentOperation} est déjà en cours ` +
+      `(Pipeline #${deploymentLock.pipelineId}, démarrée il y a ${elapsed}s). ` +
+      `Veuillez patienter.`
+    )
+  }
+  deploymentLock.locked = true
+  deploymentLock.currentOperation = operation
+  deploymentLock.pipelineId = pipelineId
+  deploymentLock.startedAt = Date.now()
+  console.log(`🔒 Deployment lock acquired for ${operation} (Pipeline #${pipelineId})`)
+}
+
+function releaseDeploymentLock() {
+  if (deploymentLock.locked) {
+    const elapsed = Math.floor((Date.now() - deploymentLock.startedAt) / 1000)
+    console.log(
+      `🔓 Deployment lock released for ${deploymentLock.currentOperation} ` +
+      `(Pipeline #${deploymentLock.pipelineId}, durée: ${elapsed}s)`
+    )
+  }
+  deploymentLock.locked = false
+  deploymentLock.currentOperation = null
+  deploymentLock.pipelineId = null
+  deploymentLock.startedAt = null
+}
+
+function isDeploymentLocked() {
+  return deploymentLock.locked
+}
+
+function getDeploymentLockStatus() {
+  if (!deploymentLock.locked) {
+    return { locked: false }
+  }
+  const elapsed = Math.floor((Date.now() - deploymentLock.startedAt) / 1000)
+  return {
+    locked: true,
+    operation: deploymentLock.currentOperation,
+    pipelineId: deploymentLock.pipelineId,
+    elapsedSeconds: elapsed
+  }
+}
+
+// Cancel a running pipeline
+function cancelPipeline(pipelineId) {
+  const pipelineInfo = runningPipelines.get(pipelineId)
+  if (pipelineInfo) {
+    pipelineInfo.cancel()
+    return true
+  }
+  return false
+}
+
+// Get list of running pipelines
+function getRunningPipelines() {
+  return Array.from(runningPipelines.keys())
+}
+
+// Check if a pipeline is running
+function isPipelineRunning(pipelineId) {
+  return runningPipelines.has(pipelineId)
+}
+
 async function executePipeline(pipeline, io) {
   const pipelineRoom = `pipeline-${pipeline.id}`
   const pipelineStartTime = Date.now()
   let timeoutId = null
   let isCancelled = false
+  
+  // Acquire deployment lock before starting
+  try {
+    acquireDeploymentLock('pipeline', pipeline.id)
+  } catch (error) {
+    // Update pipeline status to failed if lock cannot be acquired
+    await pool.query(
+      'UPDATE pipelines SET status = $1, error_message = $2 WHERE id = $3',
+      ['failed', error.message, pipeline.id]
+    )
+    io.to(pipelineRoom).emit('pipeline_failed', { error: error.message })
+    throw error
+  }
+  
+  // Register cancel function for this pipeline
+  const cancelFn = () => {
+    isCancelled = true
+    if (timeoutId) clearTimeout(timeoutId)
+  }
+  runningPipelines.set(pipeline.id, { cancel: cancelFn, startTime: pipelineStartTime })
   
   // Create a promise that rejects after timeout
   const timeoutPromise = new Promise((_, reject) => {
@@ -42,7 +143,7 @@ async function executePipeline(pipeline, io) {
   // Function to check if pipeline should continue
   const checkTimeout = () => {
     if (isCancelled) {
-      throw new Error(`Pipeline cancelled: exceeded ${PIPELINE_TIMEOUT / 1000 / 60} minutes`)
+      throw new Error('Pipeline cancelled by user')
     }
   }
   
@@ -87,9 +188,17 @@ async function executePipeline(pipeline, io) {
     io.to(pipelineRoom).emit('pipeline_completed', { id: pipeline.id })
     io.emit('pipeline:completed', { id: pipeline.id })
     
+    // Remove from running pipelines and release lock
+    runningPipelines.delete(pipeline.id)
+    releaseDeploymentLock()
+    
   } catch (error) {
     // Clear timeout on error
     if (timeoutId) clearTimeout(timeoutId)
+    
+    // Remove from running pipelines and release lock
+    runningPipelines.delete(pipeline.id)
+    releaseDeploymentLock()
     
     const duration = Math.round((Date.now() - pipelineStartTime) / 1000)
     const isTimeout = error.message.includes('timeout') || error.message.includes('cancelled')
@@ -388,12 +497,24 @@ async function runStep(stepName, pipeline) {
 
 async function rollbackPipeline(pipelineId, targetImage, io) {
   const room = `pipeline-${pipelineId}`
+  
+  // Acquire deployment lock (replaces the old runningRollbacks check)
+  try {
+    acquireDeploymentLock('rollback', pipelineId)
+  } catch (error) {
+    io.to(room).emit('rollback_failed', { error: error.message })
+    throw error
+  }
+  
+  // Keep runningRollbacks for backward compatibility
+  runningRollbacks.add('active')
+  
   io.to(room).emit('rollback_started', { version: targetImage })
 
   try {
     if (MODE === 'real') {
-      // Execute rollback
-      const rollbackResult = await sshService.rollback()
+      // Execute rollback with target image from database
+      const rollbackResult = await sshService.rollback(targetImage)
       console.log('Rollback result:', rollbackResult.output)
       
       // Wait for Java application to start (up to 90 seconds)
@@ -403,10 +524,21 @@ async function rollbackPipeline(pipelineId, targetImage, io) {
       
       for (let i = 0; i < maxRetries; i++) {
         console.log(`Rollback health check attempt ${i + 1}/${maxRetries}...`)
-        await new Promise(resolve => setTimeout(resolve, retryInterval))
-        isHealthy = await sshService.healthCheck()
-        if (isHealthy) break
+        try {
+          await new Promise(resolve => setTimeout(resolve, retryInterval))
+          isHealthy = await sshService.healthCheck()
+          console.log(`Health check ${i + 1} result: ${isHealthy}`)
+          if (isHealthy) {
+            console.log('Health check succeeded, breaking loop')
+            break
+          }
+        } catch (healthErr) {
+          console.error(`Health check attempt ${i + 1} failed:`, healthErr.message)
+          // Continue to next attempt
+        }
       }
+      
+      console.log(`Health check loop completed. Final health status: ${isHealthy}`)
       
       // If still not healthy, it might be because no container is running (intentional rollback to stop)
       if (!isHealthy) {
@@ -422,13 +554,28 @@ async function rollbackPipeline(pipelineId, targetImage, io) {
       await new Promise(resolve => setTimeout(resolve, 3000))
     }
 
+    // Release rollback lock and deployment lock
+    runningRollbacks.delete('active')
+    releaseDeploymentLock()
+    
     io.to(room).emit('rollback_completed', { version: targetImage })
     return { success: true, version: targetImage }
   } catch (error) {
+    // Release rollback lock and deployment lock on error
+    runningRollbacks.delete('active')
+    releaseDeploymentLock()
     console.error('Error during rollback:', error)
     io.to(room).emit('rollback_failed', { error: error.message })
     throw error
   }
 }
 
-module.exports = { executePipeline, rollbackPipeline }
+module.exports = { 
+  executePipeline, 
+  rollbackPipeline,
+  cancelPipeline,
+  isPipelineRunning,
+  getRunningPipelines,
+  isDeploymentLocked,
+  getDeploymentLockStatus
+}

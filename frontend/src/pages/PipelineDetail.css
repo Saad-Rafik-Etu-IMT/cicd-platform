@@ -325,6 +325,16 @@
   color: var(--text-muted);
 }
 
+.status-cancelled {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.status-rolled_back {
+  background: rgba(155, 89, 182, 0.1);
+  color: #9b59b6;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .detail-content {

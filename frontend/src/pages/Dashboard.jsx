@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { io } from 'socket.io-client'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { Icons } from '../components/Icons'
 import { StatusChart, TrendChart, DurationChart } from '../components/Charts'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../components/Toast'
+import ProductionStatus from '../components/ProductionStatus'
 import { formatDate, formatDuration } from '../utils/formatters'
 import './Dashboard.css'
 
@@ -17,15 +19,58 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [triggering, setTriggering] = useState(false)
+  const [actionInProgress, setActionInProgress] = useState(null)
+  const socketRef = useRef(null)
 
   const canTrigger = hasPermission('trigger')
+  const canRollback = hasPermission('rollback')
 
   useEffect(() => {
     fetchPipelines()
+    connectWebSocket()
+    
     // Refresh every 5 seconds
     const interval = setInterval(fetchPipelines, 5000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      if (socketRef.current) {
+        socketRef.current.disconnect()
+      }
+    }
   }, [])
+
+  const connectWebSocket = () => {
+    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3002'
+    socketRef.current = io(wsUrl)
+
+    socketRef.current.on('pipeline:completed', (data) => {
+      showToast(`Pipeline #${data.id} termine avec succes`, 'success')
+      fetchPipelines()
+    })
+
+    socketRef.current.on('pipeline:failed', (data) => {
+      showToast(`Pipeline #${data.id} a echoue`, 'error')
+      fetchPipelines()
+    })
+
+    socketRef.current.on('pipeline:cancelled', (data) => {
+      showToast(`Pipeline #${data.id} annule`, 'warning')
+      fetchPipelines()
+    })
+
+    socketRef.current.on('rollback:started', (data) => {
+      showToast(`Rollback en cours vers #${data.targetPipelineId}...`, 'info')
+    })
+
+    socketRef.current.on('rollback:completed', (data) => {
+      showToast(`Rollback termine - Version ${data.targetVersion} active`, 'success')
+      fetchPipelines()
+    })
+
+    socketRef.current.on('rollback:failed', (data) => {
+      showToast(`Rollback echoue: ${data.error}`, 'error')
+    })
+  }
 
   const fetchPipelines = async () => {
     try {
@@ -47,17 +92,48 @@ export default function Dashboard() {
         branch: 'master' 
       })
       await fetchPipelines()
-      showToast('Pipeline déclenché avec succès', 'success')
+      showToast('Pipeline declenche avec succes', 'success')
     } catch (err) {
-      showToast('Erreur lors du déclenchement du pipeline', 'error')
+      showToast('Erreur lors du declenchement du pipeline', 'error')
     }
     setTriggering(false)
+  }
+
+  const cancelPipeline = async (pipelineId, e) => {
+    e.stopPropagation()
+    if (!confirm('Annuler ce pipeline ?')) return
+    
+    setActionInProgress(pipelineId)
+    try {
+      await api.post(`/pipelines/${pipelineId}/cancel`)
+      showToast(`Pipeline #${pipelineId} annule`, 'warning')
+      await fetchPipelines()
+    } catch (err) {
+      showToast('Erreur lors de l\'annulation', 'error')
+    }
+    setActionInProgress(null)
+  }
+
+  const rollbackToPipeline = async (pipelineId, e) => {
+    e.stopPropagation()
+    if (!confirm('Effectuer un rollback vers cette version ?')) return
+    
+    setActionInProgress(pipelineId)
+    try {
+      await api.post(`/pipelines/${pipelineId}/rollback`)
+      showToast('Rollback en cours...', 'info')
+    } catch (err) {
+      showToast('Erreur lors du rollback: ' + (err.response?.data?.error || err.message), 'error')
+    }
+    setActionInProgress(null)
   }
 
   const getStatusIcon = (status) => {
     switch (status) {
       case 'success': return Icons.success
       case 'failed': return Icons.error
+      case 'cancelled': return Icons.cancelled
+      case 'rolled_back': return Icons.rollback
       case 'running': return Icons.running
       default: return Icons.pending
     }
@@ -120,6 +196,12 @@ export default function Dashboard() {
         <DurationChart pipelines={pipelines} />
       </div>
 
+      {/* Production Status */}
+      <ProductionStatus onRollback={canRollback ? () => {
+        const lastSuccess = pipelines.find(p => p.status === 'success')
+        if (lastSuccess) rollbackToPipeline(lastSuccess.id, { stopPropagation: () => {} })
+      } : null} />
+
       {/* Error message */}
       {error && (
         <div className="error-banner">
@@ -180,14 +262,37 @@ export default function Dashboard() {
                   <td>{pipeline.trigger_type || 'manual'}</td>
                   <td>{formatDuration(pipeline.started_at, pipeline.completed_at)}</td>
                   <td>{formatDate(pipeline.created_at)}</td>
-                  <td>
-                    <Link 
-                      to={`/pipeline/${pipeline.id}`} 
-                      className="btn-link"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Voir détails →
-                    </Link>
+                  <td className="actions-cell">
+                    <div className="action-buttons">
+                      {(pipeline.status === 'running' || pipeline.status === 'pending') && canTrigger && (
+                        <button 
+                          className="btn-icon btn-cancel"
+                          onClick={(e) => cancelPipeline(pipeline.id, e)}
+                          disabled={actionInProgress === pipeline.id}
+                          title="Annuler"
+                        >
+                          {actionInProgress === pipeline.id ? Icons.running : Icons.stop}
+                        </button>
+                      )}
+                      {pipeline.status === 'success' && canRollback && (
+                        <button 
+                          className="btn-icon btn-rollback"
+                          onClick={(e) => rollbackToPipeline(pipeline.id, e)}
+                          disabled={actionInProgress === pipeline.id}
+                          title="Rollback vers cette version"
+                        >
+                          {actionInProgress === pipeline.id ? Icons.running : Icons.rollback}
+                        </button>
+                      )}
+                      <Link 
+                        to={`/pipeline/${pipeline.id}`} 
+                        className="btn-icon btn-view"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Voir details"
+                      >
+                        {Icons.eye}
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
