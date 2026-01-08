@@ -5,8 +5,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies for SSH and Git
-RUN apk add --no-cache git openssh-client docker-cli curl
+# Install dependencies for SSH, Git, and Java (for Maven builds)
+RUN apk add --no-cache git openssh-client docker-cli curl openjdk17
+
+# Set JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Copy package files
 COPY package*.json ./

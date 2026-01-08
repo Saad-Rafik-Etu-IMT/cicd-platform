@@ -64,7 +64,7 @@ services:
       # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      # Pipeline mode
+      # Pipeline mode - real 模式连接真实VM部署
       PIPELINE_MODE: ${PIPELINE_MODE:-real}
       # GitHub OAuth (à configurer)
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
@@ -76,20 +76,30 @@ services:
       # VM SSH (à configurer)
       VM_HOST: ${VM_HOST:-192.168.1.100}
       VM_USER: ${VM_USER:-deployer}
-      SSH_KEY_PATH: /app/ssh/vm_deployer
+      SSH_KEY_PATH: /tmp/vm_deployer
       # SonarQube
       SONAR_URL: ${SONAR_URL:-http://sonarqube:9000}
       SONAR_TOKEN: ${SONAR_TOKEN:-}
       SONAR_EXTERNAL_URL: ${SONAR_EXTERNAL_URL:-http://localhost:30090}
       # App repo
       APP_REPO_URL: ${APP_REPO_URL:-https://github.com/Saad-Rafik-Etu-IMT/demo.git}
+      # OWASP ZAP
+      ZAP_API_URL: http://zap:8080
+      ZAP_API_KEY: 
+      PENTEST_TARGET_URL: http://host.docker.internal:8080
       # Git Polling
       GIT_POLLING_ENABLED: ${GIT_POLLING_ENABLED:-false}
       GIT_POLLING_INTERVAL: ${GIT_POLLING_INTERVAL:-300000}
       GIT_POLLING_BRANCH: ${GIT_POLLING_BRANCH:-master}
     volumes:
-      - ./ssh:/app/ssh:ro
+      - ./ssh:/app/ssh-source:ro
       - /var/run/docker.sock:/var/run/docker.sock
+    # 修复 SSH 密钥权限问题
+    command: >
+      sh -c "cp /app/ssh-source/vm_deployer /tmp/vm_deployer &&
+             chmod 600 /tmp/vm_deployer &&
+             export SSH_KEY_PATH=/tmp/vm_deployer &&
+             node src/server.js"
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,6 +119,7 @@ services:
       args:
         VITE_API_URL: http://localhost:3002
         VITE_WS_URL: ws://localhost:3002
+        VITE_SONAR_URL: http://localhost:9001
     container_name: cicd-frontend
     ports:
       - "3000:80"
@@ -173,18 +184,23 @@ services:
       retries: 5
 
   # ========================================
-  # OWASP ZAP - Tests de sécurité (Optionnel)
-  # Décommentez pour activer les scans avancés
+  # OWASP ZAP - Tests de sécurité
   # ========================================
-  # zap:
-  #   image: ghcr.io/zaproxy/zaproxy:stable
-  #   container_name: cicd-zap
-  #   command: zap.sh -daemon -host 0.0.0.0 -port 8080 -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true -config api.disablekey=true
-  #   ports:
-  #     - "8090:8080"
-  #   networks:
-  #     - cicd-network
-  #   restart: unless-stopped
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: cicd-zap
+    command: zap.sh -daemon -host 0.0.0.0 -port 8080 -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true -config api.disablekey=true
+    ports:
+      - "8090:8080"
+    networks:
+      - cicd-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/JSON/core/view/version/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 volumes:
   postgres_data:

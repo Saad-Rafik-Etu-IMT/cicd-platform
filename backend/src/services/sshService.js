@@ -1,12 +1,26 @@
 const { Client } = require('ssh2')
+const fs = require('fs')
 
 class SSHService {
   constructor() {
+    // Load private key from file if path is provided
+    let privateKey = process.env.VM_SSH_PRIVATE_KEY || null
+    const keyPath = process.env.SSH_KEY_PATH
+    
+    if (!privateKey && keyPath) {
+      try {
+        privateKey = fs.readFileSync(keyPath, 'utf8')
+        console.log(`SSH key loaded from: ${keyPath}`)
+      } catch (err) {
+        console.error(`Failed to load SSH key from ${keyPath}:`, err.message)
+      }
+    }
+
     this.config = {
       host: process.env.VM_HOST,
       port: parseInt(process.env.VM_SSH_PORT) || 22,
       username: process.env.VM_USER || 'deploy',
-      privateKey: process.env.VM_SSH_PRIVATE_KEY || null
+      privateKey: privateKey
     }
   }
 
@@ -58,9 +72,46 @@ class SSHService {
 
   /**
    * Deploy a Docker image to the VM
+   * Directly runs Docker commands instead of relying on deploy script
    */
   async deploy(dockerImage) {
-    const command = `/opt/bfb-management/deploy.sh ${dockerImage}`
+    // Create deployment commands
+    const commands = [
+      // Stop and remove existing container if running
+      `docker stop bfb-app 2>/dev/null || true`,
+      `docker rm bfb-app 2>/dev/null || true`,
+      // Run new container
+      `docker run -d --name bfb-app -p 8080:8080 --restart unless-stopped ${dockerImage}`,
+      // Show container status
+      `docker ps --filter name=bfb-app --format "Container: {{.Names}} Status: {{.Status}}"`
+    ]
+    
+    const command = commands.join(' && ')
+    return this.executeCommand(command)
+  }
+
+  /**
+   * Deploy with image transfer - loads image from tar file and runs container
+   */
+  async deployWithImage(dockerImage, imageTarPath) {
+    const remoteTarPath = `/tmp/${imageTarPath.split('/').pop()}`
+    
+    const commands = [
+      // Load the docker image from tar
+      `docker load -i ${remoteTarPath}`,
+      // Stop and remove existing container
+      `docker stop bfb-app 2>/dev/null || true`,
+      `docker rm bfb-app 2>/dev/null || true`,
+      // Run new container
+      `docker run -d --name bfb-app -p 8080:8080 --restart unless-stopped ${dockerImage}`,
+      // Cleanup tar file
+      `rm -f ${remoteTarPath}`,
+      // Show status
+      `echo "Deployed ${dockerImage} successfully"`,
+      `docker ps --filter name=bfb-app --format "Container: {{.Names}} Status: {{.Status}}"`
+    ]
+    
+    const command = commands.join(' && ')
     return this.executeCommand(command)
   }
 

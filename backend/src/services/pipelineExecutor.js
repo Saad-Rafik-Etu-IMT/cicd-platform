@@ -132,6 +132,8 @@ async function executeRealStep(stepName, pipeline) {
       const { stdout: cloneOut } = await execAsync(
         `git clone --branch ${pipeline.branch} --depth 1 ${pipeline.repo_url} ${workDir}`
       )
+      // Fix mvnw permissions after clone
+      await execAsync(`chmod +x ${workDir}/mvnw || true`)
       return `Cloned ${pipeline.repo_url} (branch: ${pipeline.branch})\n${cloneOut}`
 
     case 'Run Tests':
@@ -215,17 +217,48 @@ Dashboard: ${report.dashboardUrl || 'N/A'}`
       return `Built image: ${dockerImage}\n${dockerOut}`
 
     case 'Deploy to VM':
-      const deployResult = await sshService.deploy(dockerImage)
+      // Save image, transfer to VM, load and run
+      const imageTarPath = `/tmp/${dockerImage.replace(':', '-')}.tar`
+      
+      // Save docker image to tar file
+      await execAsync(`docker save ${dockerImage} -o ${imageTarPath}`, { timeout: 300000 })
+      
+      // Transfer image to VM using SCP
+      const vmHost = process.env.VM_HOST
+      const vmUser = process.env.VM_USER
+      const sshKeyPath = process.env.SSH_KEY_PATH || '/tmp/vm_deployer'
+      
+      await execAsync(
+        `scp -i ${sshKeyPath} -o StrictHostKeyChecking=no ${imageTarPath} ${vmUser}@${vmHost}:/tmp/`,
+        { timeout: 300000 }
+      )
+      
+      // Load image and deploy on VM
+      const deployResult = await sshService.deployWithImage(dockerImage, imageTarPath)
+      
+      // Cleanup local tar file
+      await execAsync(`rm -f ${imageTarPath}`)
+      
       return deployResult.output
 
     case 'Health Check':
-      // Wait for container to start
-      await new Promise(resolve => setTimeout(resolve, 5000))
-      const isHealthy = await sshService.healthCheck()
-      if (!isHealthy) {
-        throw new Error('Health check failed')
+      // Wait for Java application to start (Spring Boot needs more time)
+      const maxRetries = 12  // 12 retries * 10 seconds = 2 minutes max
+      const retryInterval = 10000  // 10 seconds
+      
+      for (let i = 0; i < maxRetries; i++) {
+        console.log(`Health check attempt ${i + 1}/${maxRetries}...`)
+        await new Promise(resolve => setTimeout(resolve, retryInterval))
+        
+        const isHealthy = await sshService.healthCheck()
+        if (isHealthy) {
+          return `Health check passed after ${(i + 1) * 10} seconds: Application is UP`
+        }
       }
-      return 'Health check passed: HTTP 200 OK'
+      
+      // Get container logs for debugging
+      const logs = await sshService.getLogs(30)
+      throw new Error(`Health check failed after ${maxRetries * 10} seconds. Container logs:\n${logs}`)
 
     case 'Security Scan':
       // Run penetration test against deployed application
